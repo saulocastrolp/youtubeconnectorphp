@@ -1,0 +1,130 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto:ital,wght@0,100..900;1,100..900&family=Sigmar&display=swap');
+
+.text-b {
+    font-weight: bold;
+}
+
+.logo {
+    width: 128px;
+    height: 128px;
+}
+
+.hidden {
+    display: none !important;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.visible {
+    display: block;
+    opacity: 1;
+}
+
+.titulo {
+    font-family: "Poppins", sans-serif;
+    font-weight: bold;
+    color: #ff0033;
+}
+
+body {
+    overflow-y: auto;
+    height: 100%;
+}
+
+body * {
+    font-family: "Poppins", sans-serif;
+}
+
+body {
+    hr {
+        width: 100%;
+        color: #303030;
+        background-color: #303030;
+        border-bottom: 1px dashed #303030;
+    }
+
+
+    .container {
+
+        margin-top: 5rem;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+
+        .card  {
+            height: max-content;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+
+            .card-body {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+        }
+
+
+        #user-info {
+            align-items: center;
+            gap: 10px;
+        }
+
+        #user-foto {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+        }
+
+        h1 {
+            font-family: "Sigmar", sans-serif;
+            color: #ff0033;
+            font-size: 4rem;
+            font-weight: bolder;
+            text-align: center;
+        }
+
+        .container-musica-artista {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            background-color: #ff0033;
+            border: 1px solid #686868;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem;
+
+            h2#music-title {
+                font-family: "Sigmar", sans-serif;
+                color: #fff;
+                font-size: 2rem;
+                font-weight: bold;
+                text-align: center;
+            }
+
+            h3#artist-name {
+                font-family: "Poppins", sans-serif;
+                color: #fff;
+                font-size: 1.5rem;
+                text-align: center;
+            }
+        }
+
+        .btn-group .btn-dark {
+            border-right: 1px solid #c6c6c6 !important;
+
+
+            .btn-dark:hover {
+                background-color: #c6c6c6;
+                color: #ff0033;
+            }
+        }
+    }
+}

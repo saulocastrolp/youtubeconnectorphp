@@ -5,195 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Music Connect</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
-    <link href="style.css" rel="stylesheet">
+    <link href="style.min.css" rel="stylesheet">
     <link rel="icon" type="image/png" href="favicon.png">
-    <script>
-        let API_URL = "https://youtubeconnect.app.br/api";
-
-        async function handleAuthCallback() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const accessToken = urlParams.get("access_token");
-
-            if (accessToken) {
-                console.log("🔹 Token recebido na URL:", accessToken);
-                localStorage.setItem("access_token", accessToken);
-                window.history.replaceState({}, document.title, "/"); // Remove o token da URL
-                getUserInfo();
-            } else {
-                console.warn("⚠️ Nenhum token encontrado na URL.");
-            }
-        }
-
-
-
-        async function sendCommand(endpoint) {
-            const accessToken = localStorage.getItem("access_token");
-
-            if (!accessToken) {
-                console.warn("⚠️ Usuário não autenticado. Redirecionando para login...");
-                authenticate();
-                return;
-            }
-
-            try {
-                console.log(`📡 Enviando comando: ${endpoint}`);
-                const response = await fetch(`${API_URL}/${endpoint}`, {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                    },
-                });
-
-                const data = await response.json();
-                console.log("✅ Resposta do servidor:", data.message);
-            } catch (error) {
-                console.error("❌ Erro ao enviar comando:", error);
-            }
-        }
-
-
-        async function authenticate() {
-            window.location.href = `${API_URL}/login`;
-        }
-
-        async function getStatus() {
-            const accessToken = localStorage.getItem("access_token");
-
-            if (!accessToken) {
-                console.warn("⚠️ Token ausente. Status não pode ser carregado.");
-                return;
-            }
-
-            try {
-                const response = await fetch(`${API_URL}/status`, {
-                    headers: { Authorization: `Bearer ${accessToken}` }
-                });
-
-                const data = await response.json();
-
-                if (data.error) {
-                    console.warn("⚠️ Token inválido. Redirecionando para login...");
-                    authenticate();
-                } else {
-                    document.getElementById("music-title").innerText = data.title || "Nenhuma música tocando";
-                    document.getElementById("artist-name").innerText = data.channel || "";
-                }
-
-                console.log(`🎵 Música atualizada: ${data.title} - ${data.channel}`);
-            } catch (error) {
-                console.error("❌ Erro ao obter status:", error);
-            }
-        }
-
-        async function getUserInfo() {
-            let accessToken = localStorage.getItem("access_token");
-            console.log("🔍 Enviando token para a API:", accessToken);
-
-
-            if (!accessToken) {
-                console.warn("⚠️ Nenhum token armazenado. Usuário não autenticado.");
-                return;
-            }
-
-            try {
-                const response = await fetch(`${API_URL}/user`, {
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                    },
-                });
-
-                const data = await response.json();
-
-                if (data.error) {
-                    console.warn("⚠️ Token expirado ou inválido para obter as informações do usuário. Tentando renovar...");
-
-                    // Se o backend retornou um novo token, armazenamos ele no localStorage
-                    if (data.new_access_token) {
-                        console.log("🔄 Atualizando token de acesso...");
-                        localStorage.setItem("access_token", data.new_access_token);
-                        return getUserInfo(); // Chama novamente com o novo token
-                    }
-
-                    console.warn("🚫 Token inválido para renovar os dados do usuário. Redirecionando para login...");
-                    //setTimeout(authenticate, 2000);
-                } else {
-                    document.getElementById("login-btn").style.display = "none";
-                    document.getElementById("user-info").style.display = "flex";
-                    document.getElementById("user-name").innerText = data.name;
-                    document.getElementById("user-photo").src = data.picture;
-                }
-            } catch (error) {
-                console.error("Erro ao obter dados do usuário:", error);
-            }
-        }
-
-
-        async function sync() {
-            const accessToken = localStorage.getItem("access_token");
-
-            if (!accessToken) {
-                console.warn("⚠️ Usuário não autenticado. Redirecionando para login...");
-                authenticate();
-                return;
-            }
-
-            try {
-                console.log("🔄 Sincronizando reprodução...");
-                const response = await fetch(`${API_URL}/sync?device=${navigator.userAgent.includes("Mobile") ? "celular" : "computador"}`, {
-                    headers: { Authorization: `Bearer ${accessToken}` }
-                });
-
-                const data = await response.json();
-                console.log("✅ Sincronização:", data.message, "Dispositivo:", data.device);
-            } catch (error) {
-                console.error("❌ Erro ao sincronizar reprodução:", error);
-            }
-        }
-
-        async function transferPlayback() {
-            const accessToken = localStorage.getItem("access_token");
-
-            if (!accessToken) {
-                console.warn("⚠️ Usuário não autenticado. Redirecionando para login...");
-                authenticate();
-                return;
-            }
-
-            try {
-                console.log("📲 Transferindo reprodução...");
-                const response = await fetch(`${API_URL}/transfer`, {
-                    headers: { Authorization: `Bearer ${accessToken}` }
-                });
-
-                const data = await response.json();
-                console.log("✅ Transferência realizada:", data.message, "Novo dispositivo:", data.device);
-            } catch (error) {
-                console.error("❌ Erro ao transferir reprodução:", error);
-            }
-        }
-
-        window.onload = function () {
-            handleAuthCallback();
-            getUserInfo();
-            getStatus();
-        };
-
-        setInterval(() => {
-            getStatus();
-        }, 5000);
-    </script>
-    <style>
-        #user-info {
-            display: none;
-            align-items: center;
-            gap: 10px;
-        }
-        #user-photo {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
@@ -201,23 +14,84 @@
         <br/>
         <h1> YouTube Music Connect </h1>
         <br/>
+            <div class="card login-container" id="login-container">
+                <h2 class="titulo">Login</h2>
+                <form id="login-form">
+                    <div class="mb-3">
+                        <label for="email_login" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email_login" name="email" placeholder="Insira seu email!" required>
+                    </div>
+        
+        
+                    <div class="mb-3">
+                        <label for="password_login" class="form-label">Senha</label>
+                        <input type="password" class="form-control" id="password_login" name="password" placeholder="Insira sua senha!" required>
+                    </div>
+    
+                    <button class="btn btn-success mb-3" type="submit">Entrar</button>
+                </form>
 
-        <div id="user-info">
-            <img id="user-photo" alt="Foto do Usuário">
-            <span id="user-name"></span>
+                <button id="google-login" class="btn btn-danger mb-3">Entrar com Google</button>
+
+                <p><a href="#" id="show-recovery">Esqueceu sua senha?</a></p>
+                <p>Ainda não possui conta? <a href="#" id="show-register">Cadastre-se</a></p>
+            </div>
+            <div class="card register-container hidden" id="register-container">
+                <h2 class="titulo">Registro</h2>
+                <form id="register-form" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Nome</label>
+                        <input type="text" class="form-control" id="name" name="name" placeholder="Insira seu nome!" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email_register" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email_register" name="email" placeholder="Insira seu e-mail!" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password_register" class="form-label">Senha</label>
+                        <input type="password" class="form-control" id="password_register" name="password" placeholder="Insira sua senha!" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Confirmacao de Senha</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Insira sua confirmção de senha!" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="foto" class="form-label">Sua Foto</label>
+                        <input class="form-control" type="file" name="foto" id="foto" required accept="image/*">
+                    </div>
+                    <button class="btn btn-primary" type="submit">Registrar</button>
+                </form>
+                <p>Já possui conta? <a href="#" id="show-login">Faça login</a></p>
+            </div>
+            <div class="card recovery-container hidden" id="recovery-container">
+            <h2>Recuperar Senha</h2>
+            <form id="recovery-form">
+                <div class="mb-3">
+                    <label for="email_recover" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email_recover" name="email" placeholder="Insira seu e-mail!" required>
+                </div>
+                <button class="btn-warning" type="submit">Enviar Email de Recuperação</button>
+            </form>
+        </div>
+        
+        <div class="card hidden" id="user-info">
+            <div class="card-body">
+                <img src="user.png" alt="Foto do Usuário" title="Foto do Usuário" class="foto img-fluid" id="user-foto"/>
+                <h3 id="user-name">Nenhum Usuário Logado</h3>
+                <h6 id="user-email">Nenhum Usuário Logado</h6>
+                <a href="#" title="Deslogar" id="deslogar" class="btn btn-danger">Deslogar</a>
+            </div>
         </div>
 
-        <button class="btn btn-dark" id="login-btn" onclick="authenticate()">🔑 Login</button>
         <br/>
         <div class="container-musica-artista">
+            <img id="music-img" src="music_placehollder.png" alt="Foto da Música" title="Foto da Música" class="logo img-fluid"/>
             <h2 id="music-title">Nenhuma música tocando...</h2>
             <h3 id="artist-name"></h3>
         </div>
         
     
         <div class="btn-group">
-            <button class="btn btn-dark" onclick="sync()">🔄 Sincronizar</button>
-            <button class="btn btn-dark" onclick="transferPlayback()">📲 Transferir Reprodução</button>
         </div>
         <hr/>
         <div class="btn-group">
@@ -234,7 +108,12 @@
             <button class="btn btn-dark" onclick="sendCommand('repeat?videoId=' + currentVideoId)">🔁 Repetir</button>
         </div>
     </div>
-    
+
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://kit.fontawesome.com/d186725ce3.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="script.js"></script>
 </body>
 </html>
