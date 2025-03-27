@@ -78,6 +78,13 @@ body .container h1 {
   font-weight: bolder;
   text-align: center;
 }
+body .container #download {
+  font-family: "Sigmar", sans-serif;
+  color: #ff0033;
+  font-size: 2rem;
+  font-weight: bolder;
+  text-align: center;
+}
 body .container .container-musica-artista {
   display: flex;
   flex-direction: column;
@@ -90,18 +97,50 @@ body .container .container-musica-artista {
   padding: 1.5rem;
   margin: 1rem;
 }
+body .container .container-musica-artista #music-img {
+  width: 400px;
+  height: 400px;
+  object-fit: cover;
+}
 body .container .container-musica-artista h2#music-title {
   font-family: "Sigmar", sans-serif;
   color: #fff;
   font-size: 2rem;
   font-weight: bold;
   text-align: center;
+  margin: 1rem 0;
 }
 body .container .container-musica-artista h3#artist-name {
   font-family: "Poppins", sans-serif;
   color: #fff;
   font-size: 1.5rem;
   text-align: center;
+  margin: 1rem 0;
+}
+body .container .container-musica-artista a {
+  color: #fff;
+  text-decoration: #fff;
+  padding: 0.8rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+body .container .container-musica-artista a:hover {
+  background-color: #fff;
+  color: #ff0033;
+  text-decoration: #ff0033;
+}
+body .container #playlists h2 {
+  font-family: "Sigmar", sans-serif;
+  color: #ff0033;
+  font-size: 2rem;
+  font-weight: bolder;
+  text-align: center;
+}
+body .container #playlists table tbody tr td a {
+  color: #fff;
+}
+body .container #playlists table tbody tr td a:hover {
+  color: #ff0033;
 }
 body .container .btn-group .btn-dark {
   border-right: 1px solid #c6c6c6 !important;
@@ -109,4 +148,6 @@ body .container .btn-group .btn-dark {
 body .container .btn-group .btn-dark .btn-dark:hover {
   background-color: #c6c6c6;
   color: #ff0033;
-}  /*# sourceMappingURL=style.css.map */
+}
+
+/*# sourceMappingURL=style.css.map */

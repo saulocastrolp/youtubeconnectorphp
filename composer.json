@@ -20,6 +20,19 @@
         "vlucas/phpdotenv": "^5.6",
         "phpmailer/phpmailer": "^6.9",
         "slim/psr7": "^1.7",
-        "guzzlehttp/guzzle": "^7.9"
+        "guzzlehttp/guzzle": "^7.9",
+      "ext-pdo": "*",
+      "ext-sockets": "*",
+        "psr/http-message": "^1.0",
+        "react/socket": "^1.10",
+        "ratchet/pawl": "dev-master",
+        "ratchet/rfc6455": "^0.3",
+        "guzzlehttp/psr7": "^2.0",
+        "cboden/ratchet": "^0.4.4"
+    },
+  "extra": {
+    "patches": {
+      "ratchet/pawl": "patches/fix-pawl-client-negotiator.patch"
     }
+  }
 }

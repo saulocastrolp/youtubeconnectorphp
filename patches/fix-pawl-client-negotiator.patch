@@ -1,0 +1,10 @@
+--- vendor/ratchet/pawl/src/Connector.php  2023-01-01 12:00:00.000000000 +0000
++++ vendor/ratchet/pawl/src/Connector.php  2023-01-01 12:00:00.000000000 +0000
+@@ -28,7 +28,7 @@
+    {
+        $this->loop = $loop;
+        $this->connector = $connector;
+-       $this->negotiator = new ClientNegotiator(new HttpFactory());
++       $this->negotiator = new ClientNegotiator();
+        $this->options = $options;
+    }

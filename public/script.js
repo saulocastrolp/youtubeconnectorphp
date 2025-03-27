@@ -1,3 +1,47 @@
+const showLoadingPg = () => {
+    const loader = document.createElement('div');
+    loader.id = 'loading-overlay';
+    loader.style.position = 'fixed';
+    loader.style.top = '0';
+    loader.style.left = '0';
+    loader.style.width = '100%';
+    loader.style.height = '100%';
+    loader.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    loader.style.display = 'flex';
+    loader.style.alignItems = 'center';
+    loader.style.justifyContent = 'center';
+    loader.style.zIndex = '9999';
+    loader.innerHTML = '<div style="color: #fff; font-size: 20px;">Carregando, por favor aguarde...</div>';
+    document.body.appendChild(loader);
+};
+
+const hideLoadingpg = () => {
+    const loader = document.getElementById('loading-overlay');
+    if (loader) loader.remove();
+};
+
+async function findMetadataServer() {
+    showLoadingPg();
+    try {
+        const res = await fetch('/api/scan-metadata');
+        const data = await res.json();
+
+        if (data.success && data.ip) {
+            console.log(data.ip);
+            localStorage.setItem('ip_ytmd', data.ip);
+            localStorage.setItem('hostname_ytmd', data.hostname);
+            hideLoadingpg();
+
+            //swal("Servidor encontrado!", `IP(s) com servidor ativo: ${data.ips.join(', ')}`, "success");
+        } else {
+            swal("Servidor não encontrado", "Nenhum servidor respondendo foi localizado na rede.", "error");
+        }
+    } catch (error) {
+        swal("Erro", `Falha ao buscar servidor: ${error.message}`, "error");
+    }
+}
+
+
 document.addEventListener("DOMContentLoaded", function() {
 
     const loginForm = document.getElementById("login-form");
@@ -17,6 +61,25 @@ document.addEventListener("DOMContentLoaded", function() {
     const showLogin = document.getElementById("show-login");
     const showRegister = document.getElementById("show-register");
     const showRecovery = document.getElementById("show-recovery");
+
+    const token = localStorage.getItem("token");
+    const musicImg = document.getElementById("music-img");
+    const musicTitle = document.getElementById("music-title");
+    const artistName = document.getElementById("artist-name");
+    const requestCodeBtn = document.getElementById("request-code");
+    const authenticateBtn = document.getElementById("authenticate");
+    const syncStateBtn = document.getElementById("sync-state");
+    const ipSearchBtn = document.getElementById("ip_search");
+
+
+    const play = document.getElementById("play-music");
+    if (play) {
+        play.addEventListener('click', (ev) => {
+            sendCommand('play');
+        });
+    }
+
+    const playlistTable = document.querySelector("#playlists table tbody");
 
     function showLoading(button) {
         button.dataset.originalText = button.innerHTML;
@@ -187,13 +250,16 @@ document.addEventListener("DOMContentLoaded", function() {
 
     let googleTokenArmazenado = localStorage.getItem("google_token");
     if (!googleTokenArmazenado) {
-        google.accounts.id.initialize({
-            client_id: "217397841714-ibcn4efhoe57imd1jgt73c7l99dcp8gi.apps.googleusercontent.com",
-            callback: handleGoogleLogin
-        });
+        if (google) {
+            google.accounts.id.initialize({
+                client_id: "217397841714-ibcn4efhoe57imd1jgt73c7l99dcp8gi.apps.googleusercontent.com",
+                callback: handleGoogleLogin
+            });
 
-        // Exibir automaticamente o pop-up para login no canto superior direito
-        google.accounts.id.prompt();
+            // Exibir automaticamente o pop-up para login no canto superior direito
+            google.accounts.id.prompt();
+        }
+
     }
 
     async function handleGoogleLogin(response) {
@@ -214,11 +280,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 localStorage.setItem("google_token", data.google_id_token);
                 localStorage.setItem("ytbmc", data.token);
-                user_foto.src = data.foto;
-                user_name.innerHTML = data.name;
-                user_email.innerHTML = data.email;
-                swal("Sucesso!", `Bem-vindo ${data.name}`, "success").then(() => {
-                    window.location.reload()
+                localStorage.setItem("ytmd_token", data.user.tokenYtmd);
+                user_foto.src = data.user.foto;
+                user_name.innerHTML = data.user.name;
+                user_email.innerHTML = data.user.email;
+                swal("Sucesso!", `Bem-vindo ${data.user.name}`, "success").then(() => {
+                    window.location.reload();
                 });
             }
         } catch (error) {
@@ -240,17 +307,205 @@ document.addEventListener("DOMContentLoaded", function() {
 
         const data = await response.json();
         if (response.ok) {
-            document.getElementById("user-name").innerText = data.name;
-            document.getElementById("user-email").innerText = data.email;
-            document.getElementById("user-foto").src = data.foto || "user.png";
+            document.getElementById("user-name").innerText = data.user.name;
+            document.getElementById("user-email").innerText = data.user.email;
+            document.getElementById("user-foto").src = data.user.foto || "user.png";
+            localStorage.setItem("ytmd_token", data.user.token_YTMD)
         } else {
             hideElement(user_info);
             showElement(login_container);
             localStorage.removeItem("google_token");
             localStorage.removeItem("ytbmc");
+            //swal("Erro!", data.error, "error");
+        }
+    }
+
+    function validarIP(ip) {
+        const regexIP = /^((25[0-5]|2[0-4]\\d|1?\\d?\\d)(\\.|$)){4}$/;
+        return regexIP.test(ip);
+    }
+
+    async function findMetadataServer() {
+        showLoadingPg();
+        try {
+            const res = await fetch('/api/scan-metadata');
+            const data = await res.json();
+
+            if (data.success && data.ip) {
+                console.log(data.ip);
+                localStorage.setItem('ip_ytmd', data.ip);
+                localStorage.setItem('hostname_ytmd', data.hostname);
+                hideLoadingpg();
+
+                if (ipSearchBtn) {
+                    hideElement(ipSearchBtn)
+                }
+
+                //swal("Servidor encontrado!", `IP(s) com servidor ativo: ${data.ips.join(', ')}`, "success");
+            } else {
+                swal("Servidor não encontrado", "Nenhum servidor respondendo foi localizado na rede.", "error");
+            }
+        } catch (error) {
+            swal("Erro", `Falha ao buscar servidor: ${error.message}`, "error");
+        }
+    }
+
+    async function sendCommand(command) {
+        const token = localStorage.getItem("ytmd_token");
+        if (!token) {
+            swal("Erro!", "Você precisa estar autenticado para executar comandos.", "error");
+            return;
+        }
+
+        const [commandName, query] = command.split("?");
+        let data = { command: commandName };
+
+        if (query) {
+            const params = new URLSearchParams(query);
+            if (params.has("videoId")) {
+                data["data"] = { videoId: params.get("videoId") };
+            }
+        }
+
+        try {
+            const response = await fetch("/api/command", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                swal("Sucesso!", "Comando executado com sucesso.", "success");
+            } else {
+                swal("Erro!", result.error || "Falha ao executar o comando.", "error");
+            }
+        } catch (error) {
+            swal("Erro!", "Não foi possível conectar ao servidor.", "error");
+        }
+    }
+
+    async function requestCode() {
+        const response = await fetch("/api/auth/requestcode", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                appId: "youtubeconnector",
+                appName: "YouTube Connector",
+                appVersion: "1.0.0"
+            })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            swal("Código Solicitado!", `Use este código para autenticação: ${data.code}`, "info");
+            localStorage.setItem("ytmd_auth_code", data.code);
+        } else {
             swal("Erro!", data.error, "error");
         }
     }
+
+    async function authenticate() {
+        const token = localStorage.getItem("ytbmc");
+        if (!token) return;
+        const code = localStorage.getItem("ytmd_auth_code");
+        if (!code) {
+            swal("Erro!", "Solicite um código primeiro.", "error");
+            return;
+        }
+
+        const response = await fetch("/api/auth/request", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+                appId: "youtubeconnector",
+                code: code
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            console.info(data);
+            swal("Autenticado!", "Companion Server autenticado com sucesso!", "success");
+            localStorage.setItem("ytmd_token", data.token);
+        } else {
+            swal("Erro!", data.error, "error");
+        }
+    }
+
+    async function syncState() {
+        const companionToken = localStorage.getItem("ytmd_token");
+        if (!companionToken) {
+            swal("Erro!", "Você precisa autenticar primeiro.", "error");
+            return;
+        }
+
+        const ipYTMD = localStorage.getItem("ip_ytmd");
+        if (!ipYTMD) {
+            swal("Erro!", "Você encontrar o servidor de Conexão primeiro.", "error");
+            return;
+        } else {
+            const response = await fetch(`/api/state?ip=${ipYTMD}`, {
+                method: "GET",
+                headers: {"Authorization": `Bearer ${companionToken}`, "Content-Type": "application/json"}
+            });
+
+            const data = await response.json();
+            if (response.ok && data.video) {
+                const video = data.video;
+                const playlistId = data.playlistId || "";
+
+                musicImg.src = video.thumbnails.length > 0 ? video.thumbnails[3].url : "music_placeholder.png";
+                musicImg.onclick = () => window.open(`https://music.youtube.com/watch?v=${video.id}&list=${playlistId}`, '_blank');
+                musicTitle.innerHTML = `<a href="https://music.youtube.com/watch?v=${video.id}&list=${playlistId}" target="_blank">${video.title}</a>`;
+                artistName.innerHTML = `<a href="https://music.youtube.com/channel/${video.channelId}" target="_blank">${video.author}</a>`;
+            } else {
+                swal("Erro!", "Nenhuma música tocando no momento. " + data.error, "error");
+            }
+        }
+    }
+    async function playlist() {
+        const companionToken = localStorage.getItem("ytmd_token");
+        if (!companionToken) {
+            swal("Erro!", "Você precisa autenticar primeiro.", "error");
+            return;
+        }
+
+        const ipYTMD = localStorage.getItem("ip_ytmd");
+        if (!ipYTMD) {
+            swal("Erro!", "Você encontrar o servidor de Conexão primeiro.", "error");
+            return;
+        } else {
+            const response = await fetch("/api/playlists", {
+                method: "GET",
+                headers: {"Authorization": `Bearer ${companionToken}`, "Content-Type": "application/json"}
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                console.info(playlistTable);
+                if (playlistTable) {
+                    console.info(data);
+                    let html = "";
+                    data.forEach(el => {
+                        html += `<tr><td><a href="https://music.youtube.com/watch?list=${el.id}">${el.id}</a></td><td><a href="https://music.youtube.com/watch?list=${el.id}">${el.title}</a></td></tr>`;
+                    });
+                    playlistTable.innerHTML = html;
+                }
+            } else {
+                swal("Erro!", "Nenhuma playlist encontrada. " + data.error, "error");
+            }
+        }
+    }
+
+
+    if (requestCodeBtn) requestCodeBtn.addEventListener("click", requestCode);
+    if (authenticateBtn) authenticateBtn.addEventListener("click", authenticate);
+    if (syncStateBtn) syncStateBtn.addEventListener("click", syncState);
 
     // Opcional: Evento para login manual caso necessário
     if (loginGoogleBtn) {
@@ -259,13 +514,51 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-
-    if (localStorage.getItem("ytbmc")) {
-        hideElement(login_container);
-        showElement(user_info);
-
+    if (ipSearchBtn) {
+        ipSearchBtn.addEventListener("click", async (ev) => {
+            ev.preventDefault();
+            findMetadataServer();
+        });
     }
 
-    fetchUserData();
+    if (localStorage.getItem("ip_ytmd")) {
+        if (ipSearchBtn) {
+            hideElement(ipSearchBtn);
+        }
+    }
+
+
+    if (localStorage.getItem("ytbmc")) {
+        if (login_container) {
+            hideElement(login_container);
+        }
+
+        if (user_info) {
+            showElement(user_info);
+        }
+    }
+
+
+    if (localStorage.getItem("ytmd_token")) {
+        if (requestCodeBtn) {
+            hideElement(requestCodeBtn)
+        }
+
+        if (authenticateBtn) {
+            hideElement(authenticateBtn)
+        }
+    }
+
+    if (user_info) {
+        fetchUserData();
+    }
+
+    if (localStorage.getItem("ip_ytmd")) {
+        syncState();
+        setInterval(() => {
+            syncState();
+        }, 10000);
+        playlist();
+    }
 
 });

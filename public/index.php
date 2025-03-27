@@ -1,3 +1,7 @@
+
+<?php
+    session_start();
+?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -13,6 +17,7 @@
         <img src="logo.png" alt="Logomarca" title="YouTube Music Connect" class="logo img-fluid"/>
         <br/>
         <h1> YouTube Music Connect </h1>
+        <h3 id="download">Dowload APK: <a class="btn btn-success btn-rounded" href="uploads/apk/youtube_music_connect.apk" title="YouTube Music Connect APK" target="_blank">YouTube Music Connect APK</a></h3>
         <br/>
             <div class="card login-container" id="login-container">
                 <h2 class="titulo">Login</h2>
@@ -36,6 +41,7 @@
                 <p><a href="#" id="show-recovery">Esqueceu sua senha?</a></p>
                 <p>Ainda não possui conta? <a href="#" id="show-register">Cadastre-se</a></p>
             </div>
+        
             <div class="card register-container hidden" id="register-container">
                 <h2 class="titulo">Registro</h2>
                 <form id="register-form" enctype="multipart/form-data">
@@ -63,7 +69,9 @@
                 </form>
                 <p>Já possui conta? <a href="#" id="show-login">Faça login</a></p>
             </div>
+        
             <div class="card recovery-container hidden" id="recovery-container">
+            
             <h2>Recuperar Senha</h2>
             <form id="recovery-form">
                 <div class="mb-3">
@@ -89,13 +97,20 @@
             <h2 id="music-title">Nenhuma música tocando...</h2>
             <h3 id="artist-name"></h3>
         </div>
-        
-    
+
+
+        <!-- Botões para autenticação e sincronização -->
+        <?php // if (!isset($_SESSION["ytmd_companion_token"])) { ?>
         <div class="btn-group">
+            <button id="request-code" class="btn btn-primary">📩 Solicitar Código</button>
+            <button id="authenticate" class="btn btn-success">🔑 Autenticar</button>
+            <button id="sync-state" class="btn btn-info">🔄 Sincronizar Tocando...</button>
+            <button id="ip_search" class="btn btn-success">🔄 Buscar IP do YouTube Music Desktop</button>
         </div>
+        <?php // } ?>
         <hr/>
         <div class="btn-group">
-            <button class="btn btn-dark" onclick="sendCommand('play')">▶️ Play</button>
+            <button class="btn btn-dark" id="play-music">▶️ Play</button>
             <button class="btn btn-dark" onclick="sendCommand('pause?videoId=' + currentVideoId)">⏸️ Pause</button>
             <button class="btn btn-dark" onclick="sendCommand('previous?videoId=' + currentVideoId)">⏮️ Anterior</button>
             <button class="btn btn-dark" onclick="sendCommand('next?videoId=' + currentVideoId)">⏭️ Próxima</button>
@@ -107,6 +122,24 @@
             <button class="btn btn-dark" onclick="sendCommand('shuffle')">🔀 Aleatório</button>
             <button class="btn btn-dark" onclick="sendCommand('repeat?videoId=' + currentVideoId)">🔁 Repetir</button>
         </div>
+        <hr/>
+        <div class="playlists" id="playlists">
+            <h2> Playlists </h2>
+            <div class="table-responsive">
+                <table class="table align-middle table-dark table-striped table-hover table-bordered ">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Playlist</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
     </div>
 
     <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
@@ -114,6 +147,18 @@
     <script src="https://kit.fontawesome.com/d186725ce3.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="script.js"></script>
+    
+    <?php if (!isset($_SESSION['ipytmd'])) { ?>
+            <script>
+                document.addEventListener("DOMContentLoaded", () => {
+                    findMetadataServer();
+                });
+            </script>
+    <?php } ?>
+    
+    
+   
 </body>
 </html>

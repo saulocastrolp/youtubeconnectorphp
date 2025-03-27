@@ -4,6 +4,9 @@
     require __DIR__ . '/../vendor/autoload.php';
     use Firebase\JWT\JWT;
     use Firebase\JWT\Key;
+    use GuzzleHttp\Client;
+    use GuzzleHttp\Exception\GuzzleException;
+    use GuzzleHttp\Exception\RequestException;
     use Saulo\Youtubeconnectorphp\Utils\Functions;
     use Slim\Factory\AppFactory;
     session_start();
@@ -21,8 +24,21 @@
     }
     
     function getHttpClient() {
-        return new Client(['base_uri' => 'https://youtubeconnect.app.br/companion/']);
+        return new Client(['base_uri' => $_SESSION["ipytmd"] . ":9863/api/v1/"]);
     }
+    
+    
+    $app->get('/scan-metadata', function ($request, $response) {
+        $ip_hostname = Functions::findYTMDServer();
+        $response->getBody()->write(json_encode([
+            'success' => true,
+            'ip' => $ip_hostname["ip"],
+            'hostname' => $ip_hostname["hostname"]
+        ]));
+        
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+    });
+    
 
 // Google login handler
     $app->post('/login/google', function ($request, $response) {
@@ -42,9 +58,11 @@
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email = :email");
         $stmt->execute(['email' => $payload->email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        $jwt = \Firebase\JWT\JWT::encode(['email' => $payload->email], $_ENV["SECRET_KEY_JWT"], 'HS256');
         
         if (!$user) {
-            $stmt = $pdo->prepare("INSERT INTO users (name, email, foto, token_gerar_senha_google, token_recuperacao_senha) VALUES (:name, :email, :foto, :token_gerar_senha_google, :token_recuperacao_senha)");
+            
+            $stmt = $pdo->prepare("INSERT INTO users (name, email, foto, token_gerar_senha_google, token_recuperacao_senha, token,google_id) VALUES (:name, :email, :foto, :token_gerar_senha_google, :token_recuperacao_senha, :token, :googleid)");
             $tokenRecuperacao = bin2hex(random_bytes(32));
             
             $stmt->execute([
@@ -53,6 +71,8 @@
                 ':foto' => $payload->picture,
                 ':token_gerar_senha_google' => $tokenRecuperacao,
                 ':token_recuperacao_senha' => $tokenRecuperacao,
+                ':token' => $jwt,
+                ':googleid' => $payload->sub,
             ]);
             file_put_contents(__DIR__ . "/../public/uploads/" . uniqid() . $payload->picture, file_get_contents($payload->picture));
             Functions::sendRecoveryEmail($payload->email, $tokenRecuperacao,  $payload->name);
@@ -60,20 +80,26 @@
             $user = [
                 'name' => $payload->name,
                 'email' => $payload->email,
-                'foto' => $payload->picture
+                'foto' => $payload->picture,
+                'token_YTMD' => "teste"
             ];
         }
         
-        $jwt = \Firebase\JWT\JWT::encode(['email' => $payload->email], $_ENV["SECRET_KEY_JWT"], 'HS256');
+        
         session_start();
         $_SESSION["google_id_token"] = $googleToken;
         $_SESSION["aplication_token"] = $jwt;
         $response->getBody()->write(json_encode([
+            'success' => true,
             'token' => $jwt,
             'google_id_token' => $googleToken,
-            'name' => $user['name'],
-            'email' => $user['email'],
-            'foto' => $user['foto']
+            'user' => [
+                'name' => $user['name'],
+                'email' => $user['email'],
+                'foto' => $user['foto'],
+                'token' => $jwt,
+                'tokenYtmd' => $user['token_YTMD'],
+            ]
         ]));
         
         return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
@@ -105,19 +131,21 @@
             }
         }
         
+        $jwt = JWT::encode(['email' => $email], $_ENV["SECRET_KEY_JWT"], 'HS256');
+        $_SESSION["aplication_token"] = $jwt;
+        
         $pdo = getConnection();
-        $stmt = $pdo->prepare("INSERT INTO users (name, email, password_hash, foto) VALUES (:name, :email, :password_hash, :foto)");
+        $stmt = $pdo->prepare("INSERT INTO users (name, email, password_hash, foto, token) VALUES (:name, :email, :password_hash, :foto, : token)");
         $stmt->execute([
             ':name' => $name,
             ':email' => $email,
             ':password_hash' => $password_hash,
-            ':foto' => $filename
+            ':foto' => $filename,
+            ':token' => $jwt
         ]);
         
-        $jwt = JWT::encode(['email' => $email], $_ENV["SECRET_KEY_JWT"], 'HS256');
-        $_SESSION["aplication_token"] = $jwt;
-        
         $response->getBody()->write(json_encode([
+            'success'=> true,
             'token' => $jwt,
             'user' => [
                 'name' => $name,
@@ -150,14 +178,23 @@
         }
         
         $jwt = JWT::encode(['email' => $email], $_ENV["SECRET_KEY_JWT"], 'HS256');
+        
+        $stmt = $pdo->prepare("UPDATE users SET token = :token WHERE email = :email");
+        $stmt->execute([
+            ':email' => $email,
+            ':token' => $jwt,
+        ]);
+        
         $_SESSION["aplication_token"] = $jwt;
         
         $response->getBody()->write(json_encode([
+            'success'=> true,
             'token' => $jwt,
             'user' => [
                 'name' => $user['name'],
                 'email' => $user['email'],
-                'foto' => $user['foto']
+                'foto' => $user['foto'],
+                'tokenYtmd' => $user['token_YTMD']
             ]
         ]));
         
@@ -194,7 +231,7 @@
         
         Functions::sendRecoveryEmail($data['email'], $token, $user['name']);
         
-        $response->getBody()->write(json_encode(['message' => 'Email de recuperação enviado!']));
+        $response->getBody()->write(json_encode(['success'=> true, 'message' => 'Email de recuperação enviado!']));
         return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
     });
     
@@ -211,14 +248,15 @@
         $user = $stmt->fetch();
         
         if (!$user) {
-            return $response->withStatus(400)->withJson(['error' => 'Token inválido ou expirado']);
+            $response->getBody()->write(json_encode(['error' => 'Token inválido ou expirado!']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
         }
         
         $newPasswordHash = password_hash($data['confirm_password'], PASSWORD_DEFAULT);
         $stmt = $pdo->prepare("UPDATE users SET password_hash = ?, token_recuperacao_senha = NULL WHERE id = ?");
         $stmt->execute([$newPasswordHash, $user['id']]);
         
-        $response->getBody()->write(json_encode(['message' => 'Senha redefinida com sucesso!']));
+        $response->getBody()->write(json_encode(['success'=> true, 'message' => 'Senha redefinida com sucesso!']));
         return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
     });
     
@@ -239,7 +277,7 @@
         }
         
         $pdo = getConnection();
-        $stmt = $pdo->prepare("SELECT id, name, email, foto FROM users WHERE email = ?");
+        $stmt = $pdo->prepare("SELECT id, name, email, foto, token_YTMD FROM users WHERE email = ?");
         $stmt->execute([$decoded->email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -248,8 +286,136 @@
             return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
         }
         
-        $response->getBody()->write(json_encode($user));
+        $response->getBody()->write(json_encode(['success'=> true, "user" => $user]));
         return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+    });
+    
+    $app->get('/metadata', function ($request, $response) {
+        $client = getHttpClient();
+        $apiResponse = $client->request('GET', 'metadata');
+        $response->getBody()->write($apiResponse->getBody()->getContents());
+        return $response->withHeader('Content-Type', 'application/json')->withStatus($apiResponse->getStatusCode());
+    });
+    
+    $app->post('/auth/requestcode', function ($request, $response) {
+        try {
+            $client = getHttpClient();
+            $data = json_decode($request->getBody(), true);
+            $apiResponse = $client->request('POST', 'auth/requestcode', [
+                'json' => $data
+            ]);
+            $response->getBody()->write($apiResponse->getBody()->getContents());
+            return $response->withHeader('Content-Type', 'application/json')->withStatus($apiResponse->getStatusCode());
+        } catch (RequestException $ex) {
+            $response->getBody()->write(json_encode(['error' => $ex->getMessage()]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus($ex->getResponse()->getStatusCode());
+        }
+        
+    });
+    
+    $app->post('/auth/request', function ($request, $response) {
+        try {
+            $authHeader = $request->getHeaderLine('Authorization');
+            $client = getHttpClient();
+            $data = json_decode($request->getBody(), true);
+            $apiResponse = $client->request('POST', 'auth/request', [
+                'json' => $data
+            ]);
+            $contentAPIResponse = (string)$apiResponse->getBody();
+            $contentAPIResponseDecoded = json_decode($contentAPIResponse,true);
+            $token = str_replace('Bearer ', '', $authHeader);
+            try {
+                $decoded = JWT::decode($token, new Key($_ENV["SECRET_KEY_JWT"], 'HS256'));
+            } catch (Exception $e) {
+                $response->getBody()->write(json_encode(['error' => 'Token inválido.']));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+            }
+            
+            $pdo = getConnection();
+            $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+            $stmt->execute([$decoded->email]);
+            $user = $stmt->fetch(PDO::FETCH_OBJ);
+            
+            $stmt = $pdo->prepare("UPDATE users SET token_YTMD = :token WHERE id = :id");
+            $stmt->execute([
+                ':id' => $user->id,
+                ':token' => $contentAPIResponseDecoded["token"],
+            ]);
+            $_SESSION["ytmd_companion_token"] = $contentAPIResponseDecoded["token"];
+            
+            $response->getBody()->write($contentAPIResponse);
+            return $response->withHeader('Content-Type', 'application/json')->withStatus($apiResponse->getStatusCode());
+        } catch (RequestException $ex) {
+            $response->getBody()->write(json_encode(['error' => $ex->getMessage()]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus($ex->getResponse()->getStatusCode());
+        }
+    });
+    
+    $app->get('/state', function ($request, $response) {
+        try {
+            $authHeader = $request->getHeaderLine('Authorization');
+            if (!$authHeader) {
+                $response->getBody()->write(json_encode(['error' => 'Token não fornecido.']));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+            }
+            $token = str_replace('Bearer ', '', $authHeader);
+            
+            $client = getHttpClient();
+            //$headers = $token ? ['Authorization' => "Bearer $token"] : [];
+            $headers = $token ? ['Authorization' => "$token"] : [];
+            $apiResponse = $client->request('GET', 'state', ['headers' => $headers]);
+            $response->getBody()->write($apiResponse->getBody()->getContents());
+            return $response->withHeader('Content-Type', 'application/json')->withStatus($apiResponse->getStatusCode());
+        } catch (RequestException $ex) {
+            $response->getBody()->write(json_encode(['error' => $ex->getMessage()]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus($ex->getResponse()->getStatusCode());
+        }
+    });
+    
+    $app->get('/playlists', function ($request, $response) {
+        try {
+            $authHeader = $request->getHeaderLine('Authorization');
+            if (!$authHeader) {
+                $response->getBody()->write(json_encode(['error' => 'Token não fornecido.']));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+            }
+            $token = str_replace('Bearer ', '', $authHeader);
+            
+            $client = getHttpClient();
+            //$headers = $token ? ['Authorization' => "Bearer $token"] : [];
+            $headers = $token ? ['Authorization' => "$token"] : [];
+            $apiResponse = $client->request('GET', 'playlists', ['headers' => $headers]);
+            $response->getBody()->write($apiResponse->getBody()->getContents());
+            return $response->withHeader('Content-Type', 'application/json')->withStatus($apiResponse->getStatusCode());
+        } catch (RequestException $ex) {
+            $response->getBody()->write(json_encode(['error' => $ex->getMessage()]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus($ex->getResponse()->getStatusCode());
+        }
+    });
+    
+    $app->post('/command', function ($request, $response) {
+        try {
+            $authHeader = $request->getHeaderLine('Authorization');
+            if (!$authHeader) {
+                $response->getBody()->write(json_encode(['error' => 'Token não fornecido.']));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+            }
+            $token = str_replace('Bearer ', '', $authHeader);
+            
+            $client = getHttpClient();
+            //$headers = $token ? ['Authorization' => "Bearer $token"] : [];
+            $headers = $token ? ['Authorization' => "$token"] : [];
+            $data = json_decode($request->getBody()->getContents(), true);
+            $apiResponse = $client->request('POST', 'command', [
+                'headers' => $headers,
+                'json' => $data
+            ]);
+            $response->getBody()->write($apiResponse->getBody()->getContents());
+            return $response->withHeader('Content-Type', 'application/json')->withStatus($apiResponse->getStatusCode());
+        } catch (RequestException $ex) {
+            $response->getBody()->write(json_encode(['error' => $ex->getMessage()]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus($ex->getResponse()->getStatusCode());
+        }
     });
     
     
