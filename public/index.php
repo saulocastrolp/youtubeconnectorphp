@@ -110,17 +110,17 @@
         <?php // } ?>
         <hr/>
         <div class="btn-group">
-            <button class="btn btn-dark" id="play-music">▶️ Play</button>
-            <button class="btn btn-dark" onclick="sendCommand('pause?videoId=' + currentVideoId)">⏸️ Pause</button>
-            <button class="btn btn-dark" onclick="sendCommand('previous?videoId=' + currentVideoId)">⏮️ Anterior</button>
-            <button class="btn btn-dark" onclick="sendCommand('next?videoId=' + currentVideoId)">⏭️ Próxima</button>
+            <button class="btn btn-dark" onclick="sendCommand('play')">▶️ Play</button>
+            <button class="btn btn-dark" onclick="sendCommand('pause')">⏸️ Pause</button>
+            <button class="btn btn-dark" onclick="sendCommand('previous')">⏮️ Anterior</button>
+            <button class="btn btn-dark" onclick="sendCommand('next')">⏭️ Próxima</button>
         </div>
         <hr/>
         <div class="btn-group">
-            <button class="btn btn-dark" onclick="sendCommand('like?videoId=' + currentVideoId)">❤️ Curtir</button>
-            <button class="btn btn-dark" onclick="sendCommand('dislike?videoId=' + currentVideoId)">👎 Não Curtir</button>
-            <button class="btn btn-dark" onclick="sendCommand('shuffle')">🔀 Aleatório</button>
-            <button class="btn btn-dark" onclick="sendCommand('repeat?videoId=' + currentVideoId)">🔁 Repetir</button>
+            <button class="btn btn-dark" id="curtirBtn">❤️ Curtir</button>
+            <button class="btn btn-dark" id="deslikeBtn">👎 Não Curtir</button>
+            <button class="btn btn-dark" onclick="sendCommand('shuffle');if(this.classList.contains('btn-dark')) { this.classList.remove('btn-dark'); this.classList.add('btn-success')} else {this.classList.add('btn-dark'); this.classList.remove('btn-success')}">🔀 Aleatório</button>
+            <button class="btn btn-dark" id="repeatBtn">🔁 Repetir</button>
         </div>
         <hr/>
         <div class="playlists" id="playlists">

@@ -41,6 +41,49 @@ async function findMetadataServer() {
     }
 }
 
+async function sendCommand(command) {
+    const token = localStorage.getItem("ytmd_token");
+    if (!token) {
+        //swal("Erro!", "Você precisa estar autenticado para executar comandos.", "error");
+        return;
+    }
+
+    const [commandName, query] = command.split("?");
+    let data = { command: commandName };
+
+    if (query) {
+        const params = new URLSearchParams(query);
+        if (params.has("videoId")) {
+            data["data"] = { videoId: params.get("videoId") };
+        }
+        if (params.has("repeatMode")) {
+            data["data"] =  params.get("repeatMode");
+        }
+    }
+
+    try {
+        const response = await fetch("/api/command", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+            window.location.reload();
+            return null;
+            //swal("Sucesso!", "Comando executado com sucesso.", "success");
+        } else {
+            swal("Erro!", result.error || "Falha ao executar o comando.", "error");
+        }
+    } catch (error) {
+        swal("Erro!", "Não foi possível conectar ao servidor.", "error");
+    }
+}
+
 
 document.addEventListener("DOMContentLoaded", function() {
 
@@ -71,12 +114,83 @@ document.addEventListener("DOMContentLoaded", function() {
     const syncStateBtn = document.getElementById("sync-state");
     const ipSearchBtn = document.getElementById("ip_search");
 
+    const curtirBtn = document.getElementById("curtirBtn");
+    const deslikeBtn = document.getElementById("deslikeBtn");
+    const repeatBtn = document.getElementById("repeatBtn");
 
-    const play = document.getElementById("play-music");
-    if (play) {
-        play.addEventListener('click', (ev) => {
-            sendCommand('play');
-        });
+    if (curtirBtn) {
+        let status = localStorage.getItem("metadata");
+        if (status) {
+            status = JSON.parse(status);
+            console.info(status);
+
+            if(status.video.likeStatus != 2) {
+                curtirBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    sendCommand("toggleLike");
+                    curtirBtn.setAttribute('disabled', 'disabled');
+                    curtirBtn.classList.remove('btn-dark');
+                    curtirBtn.classList.add('btn-success');
+                    //window.location.reload();
+                });
+            } else if (status.video.likeStatus == 2) {
+                curtirBtn.setAttribute('disabled', 'disabled');
+                curtirBtn.classList.remove('btn-dark');
+                curtirBtn.classList.add('btn-success');
+            }
+        }
+    }
+
+    if (deslikeBtn) {
+        let status = localStorage.getItem("metadata");
+        if (status) {
+            status = JSON.parse(status);
+            if (status.video.likeStatus != 0) {
+                deslikeBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    sendCommand("toggleDislike");
+                    deslikeBtn.setAttribute('disabled', 'disabled');
+                    window.location.reload();
+                });
+            } else {
+                deslikeBtn.setAttribute('disabled', 'disabled');
+            }
+        }
+    }
+
+    if (repeatBtn) {
+        let metadata = localStorage.getItem("metadata");
+        let mode = 0
+        let status = "Sem repetição";
+        let html = repeatBtn.innerHTML;
+
+        if (metadata) {
+            metadata = JSON.parse(metadata);
+            switch (metadata.player.queue.repeatMode) {
+                case 0:
+                    mode = 1;
+                    status = "Única";
+                    break;
+                case 1:
+                    mode = 2;
+                    status = "Todos";
+                    break;
+                case 2:
+                    mode = 0;
+                    status = "Sem repetição";
+                    break;
+                default:
+                    mode = 0;
+            }
+            repeatBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                let btn = e.currentTarget;
+                sendCommand(`repeatMode?repeatMode=${mode}`);
+                btn.innerHTML = `${html} ${status}`;
+            });
+
+            repeatBtn.innerHTML = `${html} ${status}`;
+        }
     }
 
     const playlistTable = document.querySelector("#playlists table tbody");
@@ -350,44 +464,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
-    async function sendCommand(command) {
-        const token = localStorage.getItem("ytmd_token");
-        if (!token) {
-            swal("Erro!", "Você precisa estar autenticado para executar comandos.", "error");
-            return;
-        }
-
-        const [commandName, query] = command.split("?");
-        let data = { command: commandName };
-
-        if (query) {
-            const params = new URLSearchParams(query);
-            if (params.has("videoId")) {
-                data["data"] = { videoId: params.get("videoId") };
-            }
-        }
-
-        try {
-            const response = await fetch("/api/command", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(data)
-            });
-
-            const result = await response.json();
-            if (response.ok) {
-                swal("Sucesso!", "Comando executado com sucesso.", "success");
-            } else {
-                swal("Erro!", result.error || "Falha ao executar o comando.", "error");
-            }
-        } catch (error) {
-            swal("Erro!", "Não foi possível conectar ao servidor.", "error");
-        }
-    }
-
     async function requestCode() {
         const response = await fetch("/api/auth/requestcode", {
             method: "POST",
@@ -456,6 +532,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
             const data = await response.json();
             if (response.ok && data.video) {
+                localStorage.setItem("metadata", JSON.stringify(data));
+                localStorage.setItem("videoId", data.video.id);
+                localStorage.setItem("playlistId", data.playlistId);
                 const video = data.video;
                 const playlistId = data.playlistId || "";
 

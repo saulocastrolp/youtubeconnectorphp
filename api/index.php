@@ -410,8 +410,8 @@
                 'headers' => $headers,
                 'json' => $data
             ]);
-            $response->getBody()->write($apiResponse->getBody()->getContents());
-            return $response->withHeader('Content-Type', 'application/json')->withStatus($apiResponse->getStatusCode());
+            $response->getBody()->write(json_encode(array("ok"=> true, "msg" => "Comando enviado com suceso!")));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
         } catch (RequestException $ex) {
             $response->getBody()->write(json_encode(['error' => $ex->getMessage()]));
             return $response->withHeader('Content-Type', 'application/json')->withStatus($ex->getResponse()->getStatusCode());
