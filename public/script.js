@@ -636,8 +636,12 @@ document.addEventListener("DOMContentLoaded", function() {
         syncState();
         setInterval(() => {
             syncState();
-        }, 10000);
-        playlist();
+        }, 50000);
+
+        setTimeout(() => {
+            playlist();
+        }, 20000);
+
     }
 
 });
