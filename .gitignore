@@ -6,3 +6,5 @@ node_modules/
 /DEV
 /node_modules
 /.idea
+.env
+.env*
