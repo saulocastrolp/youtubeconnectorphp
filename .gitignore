@@ -1,11 +1,8 @@
-<<<<<<< HEAD
 vendor/
 DEV/
 node_modules/
 .idea/
-=======
 /vendor
 /DEV
 /node_modules
->>>>>>> 6f81ebd (Organizando algumas pendências na sincronização com a API do Companion e adicionando botão de Download do APK)
-.env
+/.idea
