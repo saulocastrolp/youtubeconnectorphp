@@ -39,6 +39,20 @@
         return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
     });
     
+    $app->post('/registrar-companion', function ($request, $response) {
+        $dados = $request->getParsedBody();
+        //var_dump($dados);
+        $ip = $dados['ip'] ?? null;
+        $hostname = $dados['hostname'] ?? 'Desconhecido';
+        
+        // Armazene em sessão, banco ou cache
+        $_SESSION['ipytmd'] = $ip;
+        $_SESSION['hostnameytmd'] = $hostname;
+        
+        $response->getBody()->write(json_encode(['status' => 'ok']));
+        return $response->withHeader('Content-Type', 'application/json');
+    });
+    
 
 // Google login handler
     $app->post('/login/google', function ($request, $response) {

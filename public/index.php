@@ -100,12 +100,23 @@
 
 
         <!-- Botões para autenticação e sincronização -->
-        <?php // if (!isset($_SESSION["ytmd_companion_token"])) { ?>
+        <?php if (!isset($_SESSION["ipytmd"]) || $_SESSION["ipytmd"] == null) { ?>
+        <form id="formIP">
+            <div class="mb-3">
+                <label for="ip" class="form-label">Endereço de IP do Computador rodando o YouTube Music Desktop</label>
+                <input type="text" class="form-control" id="ip" name="ip" placeholder="ex.:192.168.1.1">
+                
+                <div class="text-center mt-3">
+                    <button type="submit" class="btn btn-info">Enviar IP</button>
+                </div>
+            </div>
+        </form>
+        <?php } ?>
         <div class="btn-group">
             <button id="request-code" class="btn btn-primary">📩 Solicitar Código</button>
             <button id="authenticate" class="btn btn-success">🔑 Autenticar</button>
             <button id="sync-state" class="btn btn-info">🔄 Sincronizar Tocando...</button>
-            <button id="ip_search" class="btn btn-success">🔄 Buscar IP do YouTube Music Desktop</button>
+            <!--button id="ip_search" class="btn btn-success">🔄 Buscar IP do YouTube Music Desktop</button-->
         </div>
         <?php // } ?>
         <hr/>
@@ -119,7 +130,7 @@
         <div class="btn-group">
             <button class="btn btn-dark" id="curtirBtn">❤️ Curtir</button>
             <button class="btn btn-dark" id="deslikeBtn">👎 Não Curtir</button>
-            <button class="btn btn-dark" onclick="sendCommand('shuffle');if(this.classList.contains('btn-dark')) { this.classList.remove('btn-dark'); this.classList.add('btn-success')} else {this.classList.add('btn-dark'); this.classList.remove('btn-success')}">🔀 Aleatório</button>
+            <button class="btn btn-dark" id="aleatorioBtn" onclick="sendCommand('shuffle')">🔀 Aleatório</button>
             <button class="btn btn-dark" id="repeatBtn">🔁 Repetir</button>
         </div>
         <hr/>
@@ -153,7 +164,8 @@
     <?php if (!isset($_SESSION['ipytmd'])) { ?>
             <script>
                 document.addEventListener("DOMContentLoaded", () => {
-                    findMetadataServer();
+                    //findMetadataServer();
+                    //descobrirIPdoCompanion();
                 });
             </script>
     <?php } ?>

@@ -1,3 +1,5 @@
+const portaYTMD = 9863;
+
 const showLoadingPg = () => {
     const loader = document.createElement('div');
     loader.id = 'loading-overlay';
@@ -20,7 +22,7 @@ const hideLoadingpg = () => {
     if (loader) loader.remove();
 };
 
-async function findMetadataServer() {
+/*async function findMetadataServer() {
     showLoadingPg();
     try {
         const res = await fetch('/api/scan-metadata');
@@ -35,55 +37,161 @@ async function findMetadataServer() {
             //swal("Servidor encontrado!", `IP(s) com servidor ativo: ${data.ips.join(', ')}`, "success");
         } else {
             swal("Servidor não encontrado", "Nenhum servidor respondendo foi localizado na rede.", "error");
+            hideLoadingpg();
         }
     } catch (error) {
         swal("Erro", `Falha ao buscar servidor: ${error.message}`, "error");
+        hideLoadingpg();
     }
-}
+    hideLoadingpg();
+}*/
 
 async function sendCommand(command) {
     const token = localStorage.getItem("ytmd_token");
-    if (!token) {
-        //swal("Erro!", "Você precisa estar autenticado para executar comandos.", "error");
-        return;
-    }
-
-    const [commandName, query] = command.split("?");
-    let data = { command: commandName };
-
-    if (query) {
-        const params = new URLSearchParams(query);
-        if (params.has("videoId")) {
-            data["data"] = { videoId: params.get("videoId") };
+    const ipYTMD = localStorage.getItem("ip_ytmd");
+    if (!ipYTMD) {
+        swal("Erro!", "Você encontrar o servidor de Conexão primeiro.", "error");
+    } else {
+        if (!token) {
+            //swal("Erro!", "Você precisa estar autenticado para executar comandos.", "error");
+            return;
         }
-        if (params.has("repeatMode")) {
-            data["data"] =  params.get("repeatMode");
-        }
-    }
 
-    try {
-        const response = await fetch("/api/command", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify(data)
-        });
+        const [commandName, query] = command.split("?");
+        let data = {command: commandName};
 
-        const result = await response.json();
-        if (response.ok) {
-            window.location.reload();
-            return null;
-            //swal("Sucesso!", "Comando executado com sucesso.", "success");
-        } else {
-            swal("Erro!", result.error || "Falha ao executar o comando.", "error");
+        console.info(commandName);
+        if (commandName == "shuffle") {
+            const aleatorioBtn = document.getElementById("aleatorioBtn");
+            console.info(localStorage.getItem('shuffle'));
+            if(localStorage.getItem('shuffle') === null || localStorage.getItem('shuffle') === undefined || localStorage.getItem('shuffle') === 'false') {
+                if (aleatorioBtn) {
+                    aleatorioBtn.classList.remove('btn-dark');
+                    aleatorioBtn.classList.add('btn-success');
+                }
+
+                localStorage.setItem('shuffle', 'true')
+            } else {
+                if (aleatorioBtn) {
+                    aleatorioBtn.classList.add('btn-dark');
+                    aleatorioBtn.classList.remove('btn-success');
+                }
+                localStorage.setItem('shuffle', 'false')
+            }
         }
-    } catch (error) {
-        swal("Erro!", "Não foi possível conectar ao servidor.", "error");
+
+        if (query) {
+            const params = new URLSearchParams(query);
+            if (params.has("videoId")) {
+                data["data"] = {videoId: params.get("videoId")};
+            }
+            if (params.has("repeatMode")) {
+                data["data"] = params.get("repeatMode");
+            }
+        }
+
+        try {
+            const response = await fetch(`https://${ipYTMD}:9863/api/v1/command`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `${token}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response;
+            if (response) {
+                //window.location.reload();
+                return null;
+                //swal("Sucesso!", "Comando executado com sucesso.", "success");
+            } else {
+                swal("Erro!", result.error || "Falha ao executar o comando.", "error");
+            }
+        } catch (error) {
+            console.error("Ocorreu um erro ao executar o comando. " , error);
+            //swal("Erro!", "Não foi possível conectar ao servidor.", "error");
+        }
     }
 }
 
+
+
+async function descobrirIPdoCompanion() {
+    const localIP = await descobrirLocalIP() || "192.168.1.1";
+    if (localIP) {
+        showLoadingPg();
+        const baseRede = localIP.split('.').slice(0, 3).join('.');
+
+        for (let i = 1; i < 255; i++) {
+            const ip = `${baseRede}.${i}`;
+            const url = `http://${ip}:${portaYTMD}/metadata`;
+
+            try {
+                const controller = new AbortController();
+                setTimeout(() => controller.abort(), 200); // timeout curto
+
+                const res = await fetch(url, {signal: controller.signal});
+                if (res.ok) {
+                    const metadata = await res.json();
+                    console.log('Companion encontrado em:', ip, metadata);
+
+                    localStorage.setItem('ip_ytmd', ip);
+                    localStorage.setItem('hostname_ytmd', metadata.player?.name || 'YTMD');
+
+                    // Envia para o servidor
+                    await fetch('/api/registrar-companion', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            ip: ip,
+                            hostname: metadata.player?.name || 'YTMD'
+                        })
+                    });
+                    hideLoadingpg();
+                    break;
+                }
+            } catch (e) {
+                // Ignora erro
+            }
+        }
+
+    }
+}
+
+async function descobrirLocalIP(timeoutMs = 10000) {
+    return new Promise((resolve) => {
+        const pc = new RTCPeerConnection({ iceServers: [] });
+        pc.createDataChannel('');
+        pc.createOffer().then((offer) => pc.setLocalDescription(offer));
+
+        const timeout = setTimeout(() => {
+            pc.close();
+            resolve(null);
+        }, timeoutMs);
+
+        pc.onicecandidate = (ice) => {
+            if (ice && ice.candidate && ice.candidate.candidate) {
+                const ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3})/;
+                const match = ipRegex.exec(ice.candidate.candidate);
+
+                if (match && match[1]) {
+                    clearTimeout(timeout);
+                    const ip = match[1];
+                    pc.close();
+                    resolve(ip);
+                }
+            }
+        };
+    });
+}
+
+
+function convertToYouTubeMusicTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `?t=${minutes}m${remainingSeconds}s`;
+}
 
 document.addEventListener("DOMContentLoaded", function() {
 
@@ -101,6 +209,8 @@ document.addEventListener("DOMContentLoaded", function() {
     const deslogar = document.getElementById("deslogar");
     const loginGoogleBtn = document.getElementById("google-login");
 
+    const formIP = document.getElementById("formIP");
+
     const showLogin = document.getElementById("show-login");
     const showRegister = document.getElementById("show-register");
     const showRecovery = document.getElementById("show-recovery");
@@ -117,6 +227,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const curtirBtn = document.getElementById("curtirBtn");
     const deslikeBtn = document.getElementById("deslikeBtn");
     const repeatBtn = document.getElementById("repeatBtn");
+    const aleatorioBtn = document.getElementById("aleatorioBtn");
 
     if (curtirBtn) {
         let status = localStorage.getItem("metadata");
@@ -226,6 +337,38 @@ document.addEventListener("DOMContentLoaded", function() {
     showRegister ? showRegister.addEventListener("click", () => switchForm(registerForm)) : null;
     showRecovery ? showRecovery.addEventListener("click", () => switchForm(recoveryForm)) : null;
 
+    if (formIP) {
+        formIP.addEventListener("submit",  async function enviaIPdoCompanion(ev) {
+            ev.preventDefault();
+            const localIP = formIP?.ip?.value || null;
+            if (localIP) {
+
+                try {
+
+                    localStorage.setItem('ip_ytmd', localIP);
+                    localStorage.setItem('hostname_ytmd', 'YTMD');
+
+                    // Envia para o servidor
+                    await fetch('/api/registrar-companion', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            ip: localIP,
+                            hostname: 'YTMD'
+                        })
+                    }).then(() => {
+                        //window.location.reload();
+                    });
+                } catch (error) {
+                    console.error(error);
+                }
+            }else {
+                swal("Error", "Você deve informar o IP onde está rodando o YouTube Music Desktop", "error");
+            }
+
+        });
+    }
+
     if (deslogar) {
         deslogar.addEventListener("click", () => {
             hideElement(user_info);
@@ -234,7 +377,6 @@ document.addEventListener("DOMContentLoaded", function() {
             localStorage.removeItem("ytbmc");
         });
     }
-
 
     // Função de Login
     if (loginForm) {
@@ -439,31 +581,6 @@ document.addEventListener("DOMContentLoaded", function() {
         return regexIP.test(ip);
     }
 
-    async function findMetadataServer() {
-        showLoadingPg();
-        try {
-            const res = await fetch('/api/scan-metadata');
-            const data = await res.json();
-
-            if (data.success && data.ip) {
-                console.log(data.ip);
-                localStorage.setItem('ip_ytmd', data.ip);
-                localStorage.setItem('hostname_ytmd', data.hostname);
-                hideLoadingpg();
-
-                if (ipSearchBtn) {
-                    hideElement(ipSearchBtn)
-                }
-
-                //swal("Servidor encontrado!", `IP(s) com servidor ativo: ${data.ips.join(', ')}`, "success");
-            } else {
-                swal("Servidor não encontrado", "Nenhum servidor respondendo foi localizado na rede.", "error");
-            }
-        } catch (error) {
-            swal("Erro", `Falha ao buscar servidor: ${error.message}`, "error");
-        }
-    }
-
     async function requestCode() {
         const response = await fetch("/api/auth/requestcode", {
             method: "POST",
@@ -515,33 +632,34 @@ document.addEventListener("DOMContentLoaded", function() {
 
     async function syncState() {
         const companionToken = localStorage.getItem("ytmd_token");
-        if (!companionToken) {
+        /*if (!companionToken) {
             swal("Erro!", "Você precisa autenticar primeiro.", "error");
             return;
-        }
+        }*/
 
         const ipYTMD = localStorage.getItem("ip_ytmd");
         if (!ipYTMD) {
             swal("Erro!", "Você encontrar o servidor de Conexão primeiro.", "error");
             return;
         } else {
-            const response = await fetch(`/api/state?ip=${ipYTMD}`, {
+            const response = await fetch(`https://${ipYTMD}:9863/api/v1/state`, {
                 method: "GET",
-                headers: {"Authorization": `Bearer ${companionToken}`, "Content-Type": "application/json"}
+                headers: {"Authorization": `${companionToken}`, "Content-Type": "application/json"}
             });
 
             const data = await response.json();
             if (response.ok && data.video) {
                 localStorage.setItem("metadata", JSON.stringify(data));
-                localStorage.setItem("videoId", data.video.id);
-                localStorage.setItem("playlistId", data.playlistId);
-                const video = data.video;
-                const playlistId = data.playlistId || "";
+                localStorage.setItem("videoId", data?.video?.videoId);
+                localStorage.setItem("playlistId", data?.player?.playlistId);
+                const video = data?.video;
+                const playlistId = data?.player?.playlistId || "";
+                const duration = convertToYouTubeMusicTime(video?.durationSeconds);
 
-                musicImg.src = video.thumbnails.length > 0 ? video.thumbnails[3].url : "music_placeholder.png";
-                musicImg.onclick = () => window.open(`https://music.youtube.com/watch?v=${video.id}&list=${playlistId}`, '_blank');
-                musicTitle.innerHTML = `<a href="https://music.youtube.com/watch?v=${video.id}&list=${playlistId}" target="_blank">${video.title}</a>`;
-                artistName.innerHTML = `<a href="https://music.youtube.com/channel/${video.channelId}" target="_blank">${video.author}</a>`;
+                musicImg.src = video?.thumbnails?.length > 0 ? video?.thumbnails[video?.thumbnails?.length -1]?.url : "music_placeholder.png";
+                musicImg.onclick = () => window.open(`https://music.youtube.com/watch?v=${video?.videoId}&list=${playlistId}&t=${duration}`, '_blank');
+                musicTitle.innerHTML = `<a href="https://music.youtube.com/watch?v=${video.videoId}&list=${playlistId}&t=${duration}" target="_blank">${video?.title}</a>`;
+                artistName.innerHTML = `<a href="https://music.youtube.com/channel/${video?.channelId}" target="_blank">${video?.author}</a>`;
             } else {
                 swal("Erro!", "Nenhuma música tocando no momento. " + data.error, "error");
             }
@@ -549,19 +667,19 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     async function playlist() {
         const companionToken = localStorage.getItem("ytmd_token");
-        if (!companionToken) {
+        /*if (!companionToken) {
             swal("Erro!", "Você precisa autenticar primeiro.", "error");
             return;
-        }
+        }*/
 
         const ipYTMD = localStorage.getItem("ip_ytmd");
         if (!ipYTMD) {
             swal("Erro!", "Você encontrar o servidor de Conexão primeiro.", "error");
             return;
         } else {
-            const response = await fetch("/api/playlists", {
+            const response = await fetch(`https://${ipYTMD}:9863/api/v1/playlists`, {
                 method: "GET",
-                headers: {"Authorization": `Bearer ${companionToken}`, "Content-Type": "application/json"}
+                headers: {"Authorization": `${companionToken}`, "Content-Type": "application/json"}
             });
 
             const data = await response.json();
@@ -596,7 +714,8 @@ document.addEventListener("DOMContentLoaded", function() {
     if (ipSearchBtn) {
         ipSearchBtn.addEventListener("click", async (ev) => {
             ev.preventDefault();
-            findMetadataServer();
+            //findMetadataServer();
+            //descobrirIPdoCompanion();
         });
     }
 
@@ -604,6 +723,13 @@ document.addEventListener("DOMContentLoaded", function() {
         if (ipSearchBtn) {
             hideElement(ipSearchBtn);
         }
+
+        if (formIP) {
+            hideElement(formIP);
+        }
+    }
+    else {
+        //descobrirIPdoCompanion();
     }
 
 
@@ -632,16 +758,79 @@ document.addEventListener("DOMContentLoaded", function() {
         fetchUserData();
     }
 
-    if (localStorage.getItem("ip_ytmd")) {
+    if (localStorage.getItem("ip_ytmd") && localStorage.getItem("ytmd_token")) {
         syncState();
         setInterval(() => {
-            syncState();
+            //syncState();
         }, 50000);
 
         setTimeout(() => {
             playlist();
-        }, 20000);
+            if (suf) {
+                console.log(localStorage.getItem('shuffle'));
+                if (localStorage.getItem('shuffle') === null || localStorage.getItem('shuffle') === undefined) {
+                    aleatorioBtn.classList.add('btn-dark');
+                    aleatorioBtn.classList.remove('btn-success');
+                    localStorage.setItem('shuffle', "false")
+                }
+            }
+        }, 10000);
 
     }
+
+    // Conectando-se ao servidor Socket.IO
+    const companionToken = localStorage.getItem("ytmd_token");
+    const ipYTMD = localStorage.getItem("ip_ytmd");
+
+    if (companionToken && ipYTMD) {
+        const socket = io(`https://${ipYTMD}:9863/api/v1/realtime`, {
+            transports: ['websocket'],
+            auth: {
+                token: companionToken
+            },
+            secure: true
+        });
+
+        // Evento de conexão bem-sucedida
+        socket.on('connect', () => {
+            console.log('✅ Conectado ao servidor WebSocket! ID:', socket.id);
+
+            // Exemplo de envio de dados ao servidor
+            socket.emit('mensagem', { conteudo: 'Olá servidor!' });
+        });
+
+        // Evento ao receber uma mensagem do servidor
+        socket.on('state-update', (data) => {
+            //console.log('📩 Status auto Play:', data?.player?.queue?.autoplay);
+            //console.log('📩 State Modificado recebida do servidor:', data);
+            localStorage.setItem("metadata", JSON.stringify(data));
+            localStorage.setItem("videoId", data?.video?.id);
+            localStorage.setItem("playlistId", data?.player?.playlistId);
+            const video = data?.video;
+            const playlistId = data?.player?.playlistId || "";
+            const duration = convertToYouTubeMusicTime(video?.durationSeconds);
+
+            musicImg.src = video?.thumbnails?.length > 0 ? video?.thumbnails[video?.thumbnails?.length -1]?.url : "music_placeholder.png";
+            musicImg.onclick = () => window.open(`https://music.youtube.com/watch?v=${video?.id}&list=${playlistId}&t=${duration}`, '_blank');
+            musicTitle.innerHTML = `<a href="https://music.youtube.com/watch?v=${video?.id}&list=${playlistId}&t=${duration}" target="_blank">${video?.title}</a>`;
+            artistName.innerHTML = `<a href="https://music.youtube.com/channel/${video?.channelId}" target="_blank">${video?.author}</a>`;
+        });
+
+        // Evento ao receber uma mensagem do servidor
+        socket.on('mensagem', (data) => {
+            //console.log('📩 Mensagem recebida do servidor:', data);
+        });
+
+        // Evento de desconexão
+        socket.on('disconnect', (reason) => {
+            console.warn('❌ Desconectado:', reason);
+        });
+
+        // Evento de erro
+        socket.on('connect_error', (error) => {
+            console.error('Erro na conexão:', error);
+        });
+    }
+
 
 });
