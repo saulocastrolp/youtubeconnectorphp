@@ -233,7 +233,7 @@ body {
             }
         }
 
-        #playlists{
+        #playlists, #container-queue{
             h2 {
                 font-family: "Sigmar", sans-serif;
                 color: #ff0033;
@@ -248,6 +248,14 @@ body {
                         td {
                             a {
                                 color: #fff;
+
+                                &:hover {
+                                    color: #ff0033;
+                                }
+                            }
+
+                            span {
+                                cursor: pointer;
 
                                 &:hover {
                                     color: #ff0033;

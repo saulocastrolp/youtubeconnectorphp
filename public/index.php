@@ -93,38 +93,67 @@
         </div>
 
         <br/>
-        <div class="container-musica-controllers">
-            <div class="container-musica-artista">
-                <img id="music-img" src="music_placehollder.png" alt="Foto da Música" title="Foto da Música" class="logo img-fluid"/>
-                <h2 id="music-title">Nenhuma música tocando...</h2>
-                <h3 id="artist-name"></h3>
-            </div>
+        <div class="row w-100">
+            <div class="col-12 col-md-12">
+                <div class="container-musica-controllers">
+                    <div class="container-musica-artista">
+                        <img id="music-img" src="music_placehollder.png" alt="Foto da Música" title="Foto da Música" class="logo img-fluid"/>
+                        <h2 id="music-title">Nenhuma música tocando...</h2>
+                        <h3 id="artist-name"></h3>
+                    </div>
 
-            <div class="conmtainer-controllers">
-                <div class="row">
-                    <div class="col-3">
-                        <span id="curtirBtn" class="material-icons">thumb_up</span>
-                        <span id="deslikeBtn" class="material-icons">thumb_down</span>
-                        <span id="previousBtn" class="material-icons" onclick="sendCommand('previous')">skip_previous</span>
-                        <span id="PlayPauseBtn" class="material-icons">play_circle</span>
-                        <span id="nextBtn" class="material-icons" onclick="sendCommand('next')">skip_next</span>
-                        <span id="suffleBtn" class="material-icons">shuffle</span>
-                        <span id="repeatBtn" class="material-icons">repeat</span>
-                    </div>
-                    <div class="col-7">
-                        <div class="progress-container" id="progressContainer">
-                            <div class="progress-bar" id="progressBar"></div>
-                        </div>
-                    </div>
-                    <div class="col-2">
-                        <div class="volume-control">
-                            <span id="volumeIcon" class="material-icons volume-icon">volume_up</span>
-                            <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
+                    <div class="conmtainer-controllers">
+                        <div class="row">
+                            <div class="col-12 col-md-3">
+                                <span id="curtirBtn" class="material-icons">thumb_up</span>
+                                <span id="deslikeBtn" class="material-icons">thumb_down</span>
+                                <span id="previousBtn" class="material-icons" onclick="sendCommand('previous')">skip_previous</span>
+                                <span id="PlayPauseBtn" class="material-icons">play_circle</span>
+                                <span id="nextBtn" class="material-icons" onclick="sendCommand('next')">skip_next</span>
+                                <span id="suffleBtn" class="material-icons">shuffle</span>
+                                <span id="repeatBtn" class="material-icons">repeat</span>
+                            </div>
+                            <div class="col-12 col-md-7">
+                                <div class="progress-container" id="progressContainer">
+                                    <div class="progress-bar" id="progressBar"></div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-2">
+                                <div class="volume-control">
+                                    <span id="volumeIcon" class="material-icons volume-icon">volume_up</span>
+                                    <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+            <div class="col-12 text-center my-3">
+                <a class="btn btn-info" data-bs-toggle="collapse" href="#container-queue" role="button" aria-expanded="false" aria-controls="container-queue">
+                    Mostrar Filha de Reprodução
+                </a>
+            </div>
+            <div class="col-12 col-md-12">
+                <div id="container-queue" class="collapse">
+                    <h2>Fila de Reprodução:</h2>
+                    <div class="table-responsive">
+                        <table class="table align-middle table-dark table-striped table-hover table-bordered ">
+                            <thead>
+                            <tr>
+                                <th>Capa</th>
+                                <th>Música</th>
+                                <th>Artista</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
+        
         
 
 

@@ -403,6 +403,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     const playlistTable = document.querySelector("#playlists table tbody");
+    const queueTable = document.querySelector("#container-queue table tbody");
 
     function showLoading(button) {
         button.dataset.originalText = button.innerHTML;
@@ -782,9 +783,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
             const data = await response.json();
             if (response.ok) {
-                console.info(playlistTable);
+                //console.info(playlistTable);
                 if (playlistTable) {
-                    console.info(data);
+                    //console.info(data);
                     let html = "";
                     data.forEach(el => {
                         html += `<tr><td><a href="https://music.youtube.com/watch?list=${el.id}">${el.id}</a></td><td><a href="https://music.youtube.com/watch?list=${el.id}">${el.title}</a></td></tr>`;
@@ -899,6 +900,9 @@ document.addEventListener("DOMContentLoaded", function() {
             localStorage.setItem("videoDuration", data?.video?.durationSeconds);
 
             const video = data?.video;
+            const player = data?.player;
+            const queue = player?.queue;
+            const queueItens = queue?.items;
             const playlistId = data?.playlistId || "";
             const duration = convertToYouTubeMusicTime(video?.durationSeconds);
             localStorage.setItem("metadata", JSON.stringify(data));
@@ -907,6 +911,19 @@ document.addEventListener("DOMContentLoaded", function() {
             musicImg.onclick = () => window.open(`https://music.youtube.com/watch?v=${video?.id}&list=${playlistId}&t=${duration}`, '_blank');
             musicTitle.innerHTML = `<a href="https://music.youtube.com/watch?v=${video?.id}&list=${playlistId}&t=${duration}" target="_blank">${video?.title}</a>`;
             artistName.innerHTML = `<a href="https://music.youtube.com/channel/${video?.channelId}" target="_blank">${video?.author}</a>`;
+
+            if (queueTable) {
+                let html = "";
+                queueItens.forEach((el, i) => {
+                    let thumbnail = el?.thumbnails?.length > 0 ? el?.thumbnails[el?.thumbnails?.length -1]?.url : "music_placeholder.png"
+                    html += `<tr>
+                                <td><img style="width: 64px; height: 64px; object-fit: cover;" src="${thumbnail}" alt="${el.title}" title="${el.title}" onclick="sendCommand('playQueueIndex?data=${i}')"></td>
+                                <td><span onclick="sendCommand('playQueueIndex?data=${i}')">${el.title}</span></td>
+                                <td><span onclick="sendCommand('playQueueIndex?data=${i}')">${el.author}</span></td>
+                              </tr>`;
+                });
+                queueTable.innerHTML = html;
+            }
 
             if (shuffleBtn) {
                 if(localStorage.getItem('shuffle') === 'true') {

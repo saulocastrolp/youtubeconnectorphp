@@ -202,17 +202,23 @@ body .container .container-musica-controllers .conmtainer-controllers .volume-co
 body .container .container-musica-controllers .conmtainer-controllers .volume-control input[type=range] {
   width: 150px;
 }
-body .container #playlists h2 {
+body .container #playlists h2, body .container #container-queue h2 {
   font-family: "Sigmar", sans-serif;
   color: #ff0033;
   font-size: 2rem;
   font-weight: bolder;
   text-align: center;
 }
-body .container #playlists table tbody tr td a {
+body .container #playlists table tbody tr td a, body .container #container-queue table tbody tr td a {
   color: #fff;
 }
-body .container #playlists table tbody tr td a:hover {
+body .container #playlists table tbody tr td a:hover, body .container #container-queue table tbody tr td a:hover {
+  color: #ff0033;
+}
+body .container #playlists table tbody tr td span, body .container #container-queue table tbody tr td span {
+  cursor: pointer;
+}
+body .container #playlists table tbody tr td span:hover, body .container #container-queue table tbody tr td span:hover {
   color: #ff0033;
 }
 body .container .btn-group .btn-dark {
