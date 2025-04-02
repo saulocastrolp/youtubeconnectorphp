@@ -96,6 +96,9 @@
             <img id="music-img" src="music_placehollder.png" alt="Foto da Música" title="Foto da Música" class="logo img-fluid"/>
             <h2 id="music-title">Nenhuma música tocando...</h2>
             <h3 id="artist-name"></h3>
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
         </div>
 
 

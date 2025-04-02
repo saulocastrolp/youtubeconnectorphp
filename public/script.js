@@ -88,6 +88,10 @@ async function sendCommand(command) {
             if (params.has("repeatMode")) {
                 data["data"] = params.get("repeatMode");
             }
+            if (params.has("data")) {
+                data["data"] = params.get("data");
+                console.info(data);
+            }
         }
 
         try {
@@ -219,6 +223,9 @@ document.addEventListener("DOMContentLoaded", function() {
     const musicImg = document.getElementById("music-img");
     const musicTitle = document.getElementById("music-title");
     const artistName = document.getElementById("artist-name");
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+
     const requestCodeBtn = document.getElementById("request-code");
     const authenticateBtn = document.getElementById("authenticate");
     const syncStateBtn = document.getElementById("sync-state");
@@ -301,6 +308,39 @@ document.addEventListener("DOMContentLoaded", function() {
             });
 
             repeatBtn.innerHTML = `${html} ${status}`;
+        }
+    }
+
+    const goToSecondMusic = (el , ev, duration = 0) => {
+        const rect = el.getBoundingClientRect();
+        const clickX = ev.clientX - rect.left;
+        const width = rect.width;
+        const percent = clickX / width;
+        const seconds = Math.floor(percent * duration);
+
+        // Atualiza visualmente a barra
+        progressBar.style.width = `${percent * 100}%`;
+
+        // Aqui você pode acionar a lógica de pular para um ponto no conteúdo
+        console.log(`Ir para ${seconds} segundos`);
+        sendCommand(`seekTo?data=${seconds}`);
+    }
+
+    if (progressContainer) {
+        if (progressBar) {
+            progressContainer.addEventListener('click', (e) => {
+                const rect = progressContainer.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const percent = clickX / rect.width;
+
+                //console.info("Duration Video", Number.parseInt(localStorage.getItem("videoDuration")));
+                //console.info("Porcentagem: ", percent);
+
+                const newTime =  percent * Number.parseInt(localStorage.getItem("videoDuration"));
+                //console.info("New Time: ", percent);
+                console.info(`Pular para ${newTime} segundos`);
+                sendCommand(`seekTo?data=${newTime}`);
+            });
         }
     }
 
@@ -766,7 +806,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         setTimeout(() => {
             playlist();
-            if (suf) {
+            if (aleatorioBtn) {
                 console.log(localStorage.getItem('shuffle'));
                 if (localStorage.getItem('shuffle') === null || localStorage.getItem('shuffle') === undefined) {
                     aleatorioBtn.classList.add('btn-dark');
@@ -803,17 +843,33 @@ document.addEventListener("DOMContentLoaded", function() {
         socket.on('state-update', (data) => {
             //console.log('📩 Status auto Play:', data?.player?.queue?.autoplay);
             //console.log('📩 State Modificado recebida do servidor:', data);
-            localStorage.setItem("metadata", JSON.stringify(data));
+
             localStorage.setItem("videoId", data?.video?.id);
-            localStorage.setItem("playlistId", data?.player?.playlistId);
+            localStorage.setItem("playlistId", data?.playlistId);
+            localStorage.setItem("videoDuration", data?.video?.durationSeconds);
+
             const video = data?.video;
-            const playlistId = data?.player?.playlistId || "";
+            const playlistId = data?.playlistId || "";
             const duration = convertToYouTubeMusicTime(video?.durationSeconds);
+            localStorage.setItem("metadata", JSON.stringify(data));
 
             musicImg.src = video?.thumbnails?.length > 0 ? video?.thumbnails[video?.thumbnails?.length -1]?.url : "music_placeholder.png";
             musicImg.onclick = () => window.open(`https://music.youtube.com/watch?v=${video?.id}&list=${playlistId}&t=${duration}`, '_blank');
             musicTitle.innerHTML = `<a href="https://music.youtube.com/watch?v=${video?.id}&list=${playlistId}&t=${duration}" target="_blank">${video?.title}</a>`;
             artistName.innerHTML = `<a href="https://music.youtube.com/channel/${video?.channelId}" target="_blank">${video?.author}</a>`;
+
+            if (progressContainer) {
+                if (progressBar) {
+                    const rect = progressContainer.getBoundingClientRect();
+                    const width = rect.width;
+                    //const percent = data?.player?.videoProgress / width;
+                    const percent = (data?.player?.videoProgress / data?.video?.durationSeconds) * 100;
+
+                    // Atualiza visualmente a barra
+                    progressBar.style.width = `${percent}%`;
+                }
+            }
+
         });
 
         // Evento ao receber uma mensagem do servidor

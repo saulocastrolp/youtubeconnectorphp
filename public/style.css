@@ -11,7 +11,7 @@
 .hidden {
   display: none !important;
   opacity: 0;
-  transition: opacity 0.3s ease-in-out
+  transition: opacity 0.3s ease-in-out;
 }
 
 .visible {
@@ -128,6 +128,20 @@ body .container .container-musica-artista a:hover {
   background-color: #fff;
   color: #ff0033;
   text-decoration: #ff0033;
+}
+body .container .container-musica-artista .progress-container {
+  width: 100%;
+  height: 10px;
+  background: #ccc;
+  position: relative;
+  cursor: pointer;
+  border-radius: 10px;
+}
+body .container .container-musica-artista .progress-container .progress-bar {
+  height: 100%;
+  background: #1a6f23;
+  width: 0%;
+  border-radius: 10px;
 }
 body .container #playlists h2 {
   font-family: "Sigmar", sans-serif;
