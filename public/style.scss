@@ -97,72 +97,140 @@ body {
             text-align: center;
         }
 
-        .container-musica-artista {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
+        .container-musica-controllers {
             background-color: #ff0033;
             border: 1px solid #686868;
             border-radius: 8px;
             padding: 1.5rem;
             margin: 1rem;
+            width: 100%;
 
-            #music-img {
-                width: 400px;
-                height: 400px;
-                object-fit: cover;
-            }
-
-            h2#music-title {
-                font-family: "Sigmar", sans-serif;
-                color: #fff;
-                font-size: 2rem;
-                font-weight: bold;
-                text-align: center;
-                margin: 1rem 0;
-            }
-
-            h3#artist-name {
-                font-family: "Poppins", sans-serif;
-                color: #fff;
-                font-size: 1.5rem;
-                text-align: center;
-                margin: 1rem 0;
-            }
-
-            a {
-                color: #fff;
-                text-decoration: #fff;
-                padding: .8rem;
-                border-radius: 8px;
-                margin: 1rem 0;
-
-                &:hover {
-                    background-color: #fff;
-                    color: #ff0033;
-                    text-decoration: #ff0033;
-                }
-            }
-
-            .progress-container {
+            .container-musica-artista {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
                 width: 100%;
-                height: 10px;
-                background: #ccc;
-                position: relative;
-                cursor: pointer;
-                border-radius: 10px;
 
-                .progress-bar {
-                    height: 100%;
-                    background: #1a6f23;
-                    width: 0%;
-                    border-radius: 10px;
+
+                #music-img {
+                    width: 400px;
+                    height: 400px;
+                    object-fit: cover;
+                }
+
+                h2#music-title {
+                    font-family: "Sigmar", sans-serif;
+                    color: #fff;
+                    font-size: 2rem;
+                    font-weight: bold;
+                    text-align: center;
+                    margin: 1rem 0;
+                }
+
+                h3#artist-name {
+                    font-family: "Poppins", sans-serif;
+                    color: #fff;
+                    font-size: 1.5rem;
+                    text-align: center;
+                    margin: 1rem 0;
+                }
+
+                a {
+                    color: #fff;
+                    text-decoration: #fff;
+                    padding: .8rem;
+                    border-radius: 8px;
+                    margin: 1rem 0;
+
+                    &:hover {
+                        background-color: #fff;
+                        color: #ff0033;
+                        text-decoration: #ff0033;
+                    }
                 }
             }
 
+            .conmtainer-controllers {
+                width: 100%;
 
+                #curtirBtn, #deslikeBtn, #PlayPauseBtn, #previousBtn, #nextBtn, #suffleBtn, #repeatBtn {
+                    cursor: pointer;
+                    color: #fff;
+                    margin-left: .5rem;
+                }
+
+                .progress-container {
+                    width: 100%;
+                    height: 10px;
+                    background: #ccc;
+                    position: relative;
+                    cursor: pointer;
+                    border-radius: 10px;
+                    margin-top: 6px;
+
+                    .progress-bar {
+                        height: 100%;
+                        background: #1a6f23;
+                        width: 0%;
+                        border-radius: 10px;
+                    }
+                }
+
+                .volume-control {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    //margin-top: 30px;
+
+                    input[type="range"] {
+                        -webkit-appearance: none;
+                        width: 300px;
+                        height: 8px;
+                        border-radius: 5px;
+                        background: #ccc; /* fallback */
+                        background-image: linear-gradient(to right, #1a6f23 0%, #1a6f23 0%, #ccc 0%, #ccc 100%);
+                        outline: none;
+                    }
+
+                    input[type="range"]::-webkit-slider-thumb {
+                        -webkit-appearance: none;
+                        height: 20px;
+                        width: 20px;
+                        border-radius: 50%;
+                        background: #4caf50;
+                        cursor: pointer;
+                        margin-top: -6px;
+                        box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+                    }
+
+                    input[type="range"]::-moz-range-thumb {
+                        height: 20px;
+                        width: 20px;
+                        border-radius: 50%;
+                        background: #4caf50;
+                        cursor: pointer;
+                        border: none;
+                    }
+
+                    input[type="range"]::-moz-range-track {
+                        height: 8px;
+                        border-radius: 5px;
+                        background: transparent;
+                    }
+
+                    .volume-icon {
+                        font-size: 24px;
+                        cursor: pointer;
+                        user-select: none;
+                        color: #fff;
+                    }
+
+                    input[type="range"] {
+                        width: 150px;
+                    }
+                }
+            }
         }
 
         #playlists{

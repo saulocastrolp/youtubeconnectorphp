@@ -61,24 +61,7 @@ async function sendCommand(command) {
         let data = {command: commandName};
 
         console.info(commandName);
-        if (commandName == "shuffle") {
-            const aleatorioBtn = document.getElementById("aleatorioBtn");
-            console.info(localStorage.getItem('shuffle'));
-            if(localStorage.getItem('shuffle') === null || localStorage.getItem('shuffle') === undefined || localStorage.getItem('shuffle') === 'false') {
-                if (aleatorioBtn) {
-                    aleatorioBtn.classList.remove('btn-dark');
-                    aleatorioBtn.classList.add('btn-success');
-                }
 
-                localStorage.setItem('shuffle', 'true')
-            } else {
-                if (aleatorioBtn) {
-                    aleatorioBtn.classList.add('btn-dark');
-                    aleatorioBtn.classList.remove('btn-success');
-                }
-                localStorage.setItem('shuffle', 'false')
-            }
-        }
 
         if (query) {
             const params = new URLSearchParams(query);
@@ -90,7 +73,7 @@ async function sendCommand(command) {
             }
             if (params.has("data")) {
                 data["data"] = params.get("data");
-                console.info(data);
+                //console.info(data);
             }
         }
 
@@ -225,90 +208,123 @@ document.addEventListener("DOMContentLoaded", function() {
     const artistName = document.getElementById("artist-name");
     const progressContainer = document.getElementById('progressContainer');
     const progressBar = document.getElementById('progressBar');
+    const volumeIcon = document.getElementById('volumeIcon');
+    const volumeSlider = document.getElementById('volumeSlider');
 
     const requestCodeBtn = document.getElementById("request-code");
     const authenticateBtn = document.getElementById("authenticate");
     const syncStateBtn = document.getElementById("sync-state");
     const ipSearchBtn = document.getElementById("ip_search");
 
+    const playPauseBtn = document.getElementById("PlayPauseBtn");
     const curtirBtn = document.getElementById("curtirBtn");
     const deslikeBtn = document.getElementById("deslikeBtn");
     const repeatBtn = document.getElementById("repeatBtn");
-    const aleatorioBtn = document.getElementById("aleatorioBtn");
+    const shuffleBtn = document.getElementById("suffleBtn");
+
+    if (playPauseBtn) {
+        playPauseBtn.addEventListener('click', async (ev) => {
+            let metadata = localStorage.getItem("metadata");
+            let json = JSON.parse(metadata);
+            if (Number.parseInt(json?.player?.trackState) === 1 || Number.parseInt(json?.player?.trackState) === 2) {
+                await sendCommand("pause");
+                playPauseBtn.innerHTML = "pause_circle";
+            } else {
+                await sendCommand("play");
+                playPauseBtn.innerHTML = "play_circle";
+            }
+        });
+    }
 
     if (curtirBtn) {
-        let status = localStorage.getItem("metadata");
-        if (status) {
-            status = JSON.parse(status);
-            console.info(status);
-
-            if(status.video.likeStatus != 2) {
-                curtirBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    sendCommand("toggleLike");
-                    curtirBtn.setAttribute('disabled', 'disabled');
-                    curtirBtn.classList.remove('btn-dark');
-                    curtirBtn.classList.add('btn-success');
-                    //window.location.reload();
-                });
-            } else if (status.video.likeStatus == 2) {
-                curtirBtn.setAttribute('disabled', 'disabled');
-                curtirBtn.classList.remove('btn-dark');
-                curtirBtn.classList.add('btn-success');
+        curtirBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            let metadata = localStorage.getItem("metadata");
+            let json = JSON.parse(metadata);
+            if (Number.parseInt(json?.video?.likeStatus) === 2) {
+                await sendCommand("toggleDislike");
+                deslikeBtn.style.color = "#1a6f23"
+                curtirBtn.style.color = "#fff"
+            } else {
+                await sendCommand("toggleLike");
+                curtirBtn.style.color = "#1a6f23";
             }
-        }
+        });
     }
 
     if (deslikeBtn) {
-        let status = localStorage.getItem("metadata");
-        if (status) {
-            status = JSON.parse(status);
-            if (status.video.likeStatus != 0) {
-                deslikeBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    sendCommand("toggleDislike");
-                    deslikeBtn.setAttribute('disabled', 'disabled');
-                    window.location.reload();
-                });
-            } else {
-                deslikeBtn.setAttribute('disabled', 'disabled');
-            }
-        }
+        deslikeBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            await sendCommand("toggleDislike");
+            deslikeBtn.style.color = "#1a6f23";
+            curtirBtn.style.color = "#fff";
+        });
     }
 
     if (repeatBtn) {
-        let metadata = localStorage.getItem("metadata");
-        let mode = 0
-        let status = "Sem repetição";
-        let html = repeatBtn.innerHTML;
 
-        if (metadata) {
+
+        let mode = 0
+        let icon = "repeat";
+
+        repeatBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+
+            let metadata = localStorage.getItem("metadata");
             metadata = JSON.parse(metadata);
-            switch (metadata.player.queue.repeatMode) {
+            switch (Number.parseInt(metadata?.player?.queue?.repeatMode)) {
+                case -1:
+                    mode = 2;
+                    icon = "repeat_one";
+                    break;
                 case 0:
-                    mode = 1;
-                    status = "Única";
+                    mode = 2;
+                    icon = "repeat_one";
                     break;
                 case 1:
-                    mode = 2;
-                    status = "Todos";
+                    mode = 0;
+                    icon = "repeat";
                     break;
                 case 2:
-                    mode = 0;
-                    status = "Sem repetição";
+                    mode = 1;
+                    icon = "repeat";
                     break;
                 default:
                     mode = 0;
             }
-            repeatBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                let btn = e.currentTarget;
-                sendCommand(`repeatMode?repeatMode=${mode}`);
-                btn.innerHTML = `${html} ${status}`;
-            });
 
-            repeatBtn.innerHTML = `${html} ${status}`;
+            sendCommand(`repeatMode?repeatMode=${mode}`);
+            repeatBtn.innerHTML = `${icon}`;
+            if (mode !== 0) {
+                repeatBtn.style.color = "#1a6f23";
+            } else {
+                repeatBtn.style.color = "#fff";
+            }
+        });
+
+        if (mode !== 0) {
+            repeatBtn.style.color = "#1a6f23";
+        } else {
+            repeatBtn.style.color = "#fff";
         }
+        repeatBtn.innerHTML = `${icon}`;
+    }
+
+    if (shuffleBtn) {
+
+        shuffleBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            sendCommand("shuffle");
+
+            if(localStorage.getItem('shuffle') === null || localStorage.getItem('shuffle') === undefined || localStorage.getItem('shuffle') === 'false') {
+                shuffleBtn.style.color = "#1a6f23";
+                localStorage.setItem('shuffle', 'true')
+            } else {
+                shuffleBtn.style.color = "#fff";
+                localStorage.setItem('shuffle', 'false')
+            }
+            console.info("Modo Aleatório: ", localStorage.getItem('shuffle'));
+        });
     }
 
     const goToSecondMusic = (el , ev, duration = 0) => {
@@ -326,6 +342,11 @@ document.addEventListener("DOMContentLoaded", function() {
         sendCommand(`seekTo?data=${seconds}`);
     }
 
+    const updateSliderBackground = (el) => {
+        const val = (el.value - el.min) / (el.max - el.min) * 100;
+        el.style.backgroundImage = `linear-gradient(to right, #1a6f23 0%, #1a6f23 ${val}%, #ccc ${val}%, #ccc 100%)`;
+    }
+
     if (progressContainer) {
         if (progressBar) {
             progressContainer.addEventListener('click', (e) => {
@@ -340,6 +361,43 @@ document.addEventListener("DOMContentLoaded", function() {
                 //console.info("New Time: ", percent);
                 console.info(`Pular para ${newTime} segundos`);
                 sendCommand(`seekTo?data=${newTime}`);
+            });
+        }
+    }
+
+    if (volumeSlider) {
+        volumeSlider.addEventListener('input', (e) => {
+            let volume = parseFloat(e.target.value) * 100;
+            console.info("Volume", volume);
+            sendCommand(`setVolume?data=${volume}`);
+            updateSliderBackground(e.currentTarget);
+        });
+
+        if (volumeIcon) {
+
+            const updateVolumeIcon = (metadata) => {
+                if (metadata?.player?.muted || Number.parseInt(metadata?.player?.volume) === 0) {
+                    volumeIcon.innerText = 'volume_off';
+                } else if (metadata?.player?.volume < 0.5) {
+                    volumeIcon.innerText = 'volume_down';
+                } else {
+                    volumeIcon.innerText = 'volume_up';
+                }
+            }
+
+            volumeIcon.addEventListener('click', () => {
+                let metadata = JSON.parse(localStorage.getItem("metadata"));
+                console.log(metadata);
+                volumeSlider.value = metadata?.player?.muted ? 0 : metadata?.player?.volume;
+                updateVolumeIcon(metadata);
+                if (!metadata?.player?.muted) {
+                    sendCommand("mute");
+                    volumeIcon.innerText = 'volume_off';
+                } else {
+                    sendCommand("unmute");
+                    volumeIcon.innerText = 'volume_up';
+                }
+
             });
         }
     }
@@ -806,14 +864,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
         setTimeout(() => {
             playlist();
-            if (aleatorioBtn) {
-                console.log(localStorage.getItem('shuffle'));
-                if (localStorage.getItem('shuffle') === null || localStorage.getItem('shuffle') === undefined) {
-                    aleatorioBtn.classList.add('btn-dark');
-                    aleatorioBtn.classList.remove('btn-success');
-                    localStorage.setItem('shuffle', "false")
-                }
-            }
         }, 10000);
 
     }
@@ -836,7 +886,7 @@ document.addEventListener("DOMContentLoaded", function() {
             console.log('✅ Conectado ao servidor WebSocket! ID:', socket.id);
 
             // Exemplo de envio de dados ao servidor
-            socket.emit('mensagem', { conteudo: 'Olá servidor!' });
+            //socket.emit('mensagem', { conteudo: 'Olá servidor!' });
         });
 
         // Evento ao receber uma mensagem do servidor
@@ -858,6 +908,60 @@ document.addEventListener("DOMContentLoaded", function() {
             musicTitle.innerHTML = `<a href="https://music.youtube.com/watch?v=${video?.id}&list=${playlistId}&t=${duration}" target="_blank">${video?.title}</a>`;
             artistName.innerHTML = `<a href="https://music.youtube.com/channel/${video?.channelId}" target="_blank">${video?.author}</a>`;
 
+            if (shuffleBtn) {
+                if(localStorage.getItem('shuffle') === 'true') {
+                    shuffleBtn.style.color = "#1a6f23";
+                } else {
+                    shuffleBtn.style.color = "#fff";
+                }
+            }
+
+            if (repeatBtn) {
+                let mode = 0;
+                let icon = "repeat";
+                switch (Number.parseInt(data?.player?.queue?.repeatMode)) {
+                    case 1:
+                        mode = 1;
+                        icon = "repeat";
+                        break;
+                    case 2:
+                        mode = 2;
+                        icon = "repeat_one";
+                        break;
+                    default:
+                        icon = "repeat";
+                        mode = 0;
+                }
+                repeatBtn.innerHTML = `${icon}`;
+                if (mode !== 0) {
+                    repeatBtn.style.color = "#1a6f23";
+                } else {
+                    repeatBtn.style.color = "#fff";
+                }
+            }
+
+            if (playPauseBtn) {
+                if (Number.parseInt(data?.player?.trackState) === 1 || Number.parseInt(data?.player?.trackState) === 2) {
+                    playPauseBtn.innerHTML = "pause_circle";
+                } else {
+                    playPauseBtn.innerHTML = "play_circle";
+                }
+            }
+
+            if (curtirBtn && deslikeBtn) {
+                //console.info("Like Status", data?.video?.likeStatus);
+                if (Number.parseInt(data?.video?.likeStatus) === 2) {
+                    deslikeBtn.style.color = "#fff";
+                    curtirBtn.style.color = "#1a6f23";
+                } else if (Number.parseInt(data?.video?.likeStatus) === 0) {
+                    deslikeBtn.style.color = "#1a6f23";
+                    curtirBtn.style.color = "#fff";
+                } else {
+                    deslikeBtn.style.color = "#fff";
+                    curtirBtn.style.color = "#fff";
+                }
+            }
+
             if (progressContainer) {
                 if (progressBar) {
                     const rect = progressContainer.getBoundingClientRect();
@@ -867,6 +971,20 @@ document.addEventListener("DOMContentLoaded", function() {
 
                     // Atualiza visualmente a barra
                     progressBar.style.width = `${percent}%`;
+                }
+            }
+
+            if (volumeSlider) {
+                //console.info(volumeSliderValue);
+                volumeSlider.value = data?.player?.volume / 100;
+                updateSliderBackground(volumeSlider);
+
+                if (volumeIcon) {
+                    if (typeof updateVolumeIcon === 'function') {
+                        updateVolumeIcon(data);
+                    }
+
+
                 }
             }
 

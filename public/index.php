@@ -8,6 +8,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Music Connect</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
     <link href="style.min.css" rel="stylesheet">
     <link rel="icon" type="image/png" href="favicon.png">
@@ -92,14 +93,39 @@
         </div>
 
         <br/>
-        <div class="container-musica-artista">
-            <img id="music-img" src="music_placehollder.png" alt="Foto da Música" title="Foto da Música" class="logo img-fluid"/>
-            <h2 id="music-title">Nenhuma música tocando...</h2>
-            <h3 id="artist-name"></h3>
-            <div class="progress-container" id="progressContainer">
-                <div class="progress-bar" id="progressBar"></div>
+        <div class="container-musica-controllers">
+            <div class="container-musica-artista">
+                <img id="music-img" src="music_placehollder.png" alt="Foto da Música" title="Foto da Música" class="logo img-fluid"/>
+                <h2 id="music-title">Nenhuma música tocando...</h2>
+                <h3 id="artist-name"></h3>
+            </div>
+
+            <div class="conmtainer-controllers">
+                <div class="row">
+                    <div class="col-3">
+                        <span id="curtirBtn" class="material-icons">thumb_up</span>
+                        <span id="deslikeBtn" class="material-icons">thumb_down</span>
+                        <span id="previousBtn" class="material-icons" onclick="sendCommand('previous')">skip_previous</span>
+                        <span id="PlayPauseBtn" class="material-icons">play_circle</span>
+                        <span id="nextBtn" class="material-icons" onclick="sendCommand('next')">skip_next</span>
+                        <span id="suffleBtn" class="material-icons">shuffle</span>
+                        <span id="repeatBtn" class="material-icons">repeat</span>
+                    </div>
+                    <div class="col-7">
+                        <div class="progress-container" id="progressContainer">
+                            <div class="progress-bar" id="progressBar"></div>
+                        </div>
+                    </div>
+                    <div class="col-2">
+                        <div class="volume-control">
+                            <span id="volumeIcon" class="material-icons volume-icon">volume_up</span>
+                            <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+        
 
 
         <!-- Botões para autenticação e sincronização -->
@@ -122,20 +148,6 @@
             <!--button id="ip_search" class="btn btn-success">🔄 Buscar IP do YouTube Music Desktop</button-->
         </div>
         <?php // } ?>
-        <hr/>
-        <div class="btn-group">
-            <button class="btn btn-dark" onclick="sendCommand('play')">▶️ Play</button>
-            <button class="btn btn-dark" onclick="sendCommand('pause')">⏸️ Pause</button>
-            <button class="btn btn-dark" onclick="sendCommand('previous')">⏮️ Anterior</button>
-            <button class="btn btn-dark" onclick="sendCommand('next')">⏭️ Próxima</button>
-        </div>
-        <hr/>
-        <div class="btn-group">
-            <button class="btn btn-dark" id="curtirBtn">❤️ Curtir</button>
-            <button class="btn btn-dark" id="deslikeBtn">👎 Não Curtir</button>
-            <button class="btn btn-dark" id="aleatorioBtn" onclick="sendCommand('shuffle')">🔀 Aleatório</button>
-            <button class="btn btn-dark" id="repeatBtn">🔁 Repetir</button>
-        </div>
         <hr/>
         <div class="playlists" id="playlists">
             <h2> Playlists </h2>
